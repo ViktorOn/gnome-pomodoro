@@ -6,14 +6,14 @@ dbus_conf.set(
 )
 
 configure_file(
-  input: 'org.gnome.Pomodoro.service.in',
+  input: 'org.gnomepomodoro.Pomodoro.service.in',
   output: '@BASENAME@',
   configuration: dbus_conf,
   install_dir: get_option('datadir') / 'dbus-1' / 'services',
 )
 
 i18n.merge_file(
-  input: 'org.gnome.Pomodoro.desktop.in',
+  input: 'org.gnomepomodoro.Pomodoro.desktop.in',
   output: '@BASENAME@',
   install: true,
   install_dir:  get_option('datadir') / 'applications',
@@ -22,7 +22,7 @@ i18n.merge_file(
 )
 
 i18n.merge_file(
-  input: 'org.gnome.Pomodoro.appdata.xml.in',
+  input: 'org.gnomepomodoro.Pomodoro.appdata.xml.in',
   output: '@BASENAME@',
   install: true,
   install_dir: get_option('datadir') / 'metainfo',
@@ -30,7 +30,7 @@ i18n.merge_file(
 )
 
 install_data(
-  'org.gnome.pomodoro.gschema.xml',
+  'org.gnomepomodoro.Pomodoro.gschema.xml',
   install_dir: get_option('datadir') / 'glib-2.0' / 'schemas',
 )
 

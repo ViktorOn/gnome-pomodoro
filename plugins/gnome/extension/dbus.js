@@ -26,7 +26,7 @@ const Capabilities = Extension.imports.capabilities;
 
 
 const PomodoroInterface = '<node> \
-<interface name="org.gnome.Pomodoro"> \
+<interface name="org.gnomepomodoro.Pomodoro"> \
     <property name="Elapsed" type="d" access="read"/> \
     <property name="State" type="s" access="read"/> \
     <property name="StateDuration" type="d" access="read"/> \
@@ -58,7 +58,7 @@ const PomodoroInterface = '<node> \
 </node>';
 
 const PomodoroExtensionInterface = '<node> \
-<interface name="org.gnome.Pomodoro.Extension"> \
+<interface name="org.gnomepomodoro.Pomodoro.Extension"> \
     <property name="Capabilities" type="as" access="read"/> \
 </interface> \
 </node>';
@@ -66,7 +66,7 @@ const PomodoroExtensionInterface = '<node> \
 
 var PomodoroProxy = Gio.DBusProxy.makeProxyWrapper(PomodoroInterface);
 function Pomodoro(callback, cancellable) {
-    return new PomodoroProxy(Gio.DBus.session, 'org.gnome.Pomodoro', '/org/gnome/Pomodoro', callback, cancellable);
+    return new PomodoroProxy(Gio.DBus.session, 'org.gnomepomodoro.Pomodoro', '/org/gnomepomodoro/Pomodoro', callback, cancellable);
 }
 
 
@@ -75,7 +75,7 @@ var PomodoroExtension = class {
         this.Capabilities = Capabilities.capabilities;
 
         this._dbusImpl = Gio.DBusExportedObject.wrapJSObject(PomodoroExtensionInterface, this);
-        this._dbusImpl.export(Gio.DBus.session, '/org/gnome/Pomodoro/Extension');
+        this._dbusImpl.export(Gio.DBus.session, '/org/gnomepomodoro/Pomodoro/Extension');
         this._dbusId = 0;
 
         this.initialized = false;
@@ -95,7 +95,7 @@ var PomodoroExtension = class {
 
     run() {
         if (this._dbusId == 0) {
-            this._dbusId = Gio.DBus.session.own_name('org.gnome.Pomodoro.Extension',
+            this._dbusId = Gio.DBus.session.own_name('org.gnomepomodoro.Pomodoro.Extension',
                                                      Gio.BusNameOwnerFlags.REPLACE,
                                                      this._onNameAcquired.bind(this),
                                                      this._onNameLost.bind(this));

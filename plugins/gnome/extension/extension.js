@@ -70,11 +70,11 @@ var PomodoroExtension = class {
         this._timerStateDuration = 0.0;
 
         try {
-            this.settings = Settings.getSettings('org.gnome.pomodoro.preferences');
+            this.settings = Settings.getSettings('org.gnomepomodoro.Pomodoro.preferences');
             this.settings.connect('changed::show-screen-notifications',
                                   this._onSettingsChanged.bind(this));
 
-            this.pluginSettings = Settings.getSettings('org.gnome.pomodoro.plugins.gnome');
+            this.pluginSettings = Settings.getSettings('org.gnomepomodoro.Pomodoro.plugins.gnome');
             this.pluginSettings.connect('changed::hide-system-notifications',
                                         this._onSettingsChanged.bind(this));
             this.pluginSettings.connect('changed::indicator-type',
@@ -100,7 +100,7 @@ var PomodoroExtension = class {
     }
 
     get application() {
-        return Shell.AppSystem.get_default().lookup_app('org.gnome.Pomodoro.desktop');
+        return Shell.AppSystem.get_default().lookup_app('org.gnomepomodoro.Pomodoro.desktop');
     }
 
     setMode(mode) {
@@ -184,7 +184,7 @@ var PomodoroExtension = class {
     _onServiceNameLost() {
         this.emit('service-name-lost');
 
-        Utils.logError('Lost service name "org.gnome.Pomodoro.Extension"');
+        Utils.logError('Lost service name "org.gnomepomodoro.Pomodoro.Extension"');
     }
 
     _onTimerServiceConnected() {
@@ -192,7 +192,7 @@ var PomodoroExtension = class {
     }
 
     _onTimerServiceDisconnected() {
-        Utils.logWarning('Lost connection to "org.gnome.Pomodoro"');
+        Utils.logWarning('Lost connection to "org.gnomepomodoro.Pomodoro"');
     }
 
     _onTimerUpdate() {

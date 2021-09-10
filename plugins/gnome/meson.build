@@ -19,7 +19,7 @@ install_data(
 )
 
 install_data(
-  'org.gnome.pomodoro.plugins.gnome.gschema.xml',
+  'org.gnomepomodoro.Pomodoro.plugins.gnome.gschema.xml',
   install_dir: gschema_dir,
 )
 

@@ -68,7 +68,7 @@ var Timer = class {
                                        this._onPropertiesChanged.bind(this));
 
         this._nameWatcherId = Gio.DBus.session.watch_name(
-                                       'org.gnome.Pomodoro',
+                                       'org.gnomepomodoro.Pomodoro',
                                        Gio.BusNameWatcherFlags.AUTO_START,
                                        this._onNameAppeared.bind(this),
                                        this._onNameVanished.bind(this));
