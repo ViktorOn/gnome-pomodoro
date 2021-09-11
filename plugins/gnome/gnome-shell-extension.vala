@@ -299,7 +299,7 @@ namespace GnomePlugin
                 return;
             }
 
-            GLib.debug ("Reloading extension...");
+            GLib.debug ("Reloading extension…");
 
             var handler_id = this.proxy.extension_status_changed.connect ((uuid, state, error) => {
                 if (uuid == this.uuid) {

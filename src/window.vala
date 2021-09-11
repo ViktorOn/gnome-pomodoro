@@ -143,7 +143,7 @@ namespace Pomodoro
 
         private void on_timer_state_notify ()
         {
-            this.timer_stack.visible_child_name = 
+            this.timer_stack.visible_child_name =
                     (this.timer.state is Pomodoro.DisabledState) ? "disabled" : "enabled";
 
             foreach (var mapping in STATE_NAMES)
