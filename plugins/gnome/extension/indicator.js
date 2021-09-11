@@ -17,16 +17,17 @@
  * Authors: Arun Mahapatra <pratikarun@gmail.com>
  *          Kamil Prusko <kamilprusko@gmail.com>
  */
+/* exported IndicatorType, IndicatorMenu, TextIndicator, ShortTextIndicator, IconIndicator, Indicator */
 
 const Cairo = imports.cairo;
+const Gettext = imports.gettext;
 const Signals = imports.signals;
 
-const { Clutter, Gio, GLib, GObject, Gtk, Meta, Pango, Shell, St } = imports.gi;
+const { Clutter, Gio, GLib, GObject, Pango, St } = imports.gi;
 
 const Extension = imports.misc.extensionUtils.getCurrentExtension();
 const BoxPointer = imports.ui.boxpointer;
 const Main = imports.ui.main;
-const MessageTray = imports.ui.messageTray;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 
@@ -34,8 +35,8 @@ const Config = Extension.imports.config;
 const Timer = Extension.imports.timer;
 const Utils = Extension.imports.utils;
 
-const Gettext = imports.gettext.domain(Config.GETTEXT_PACKAGE);
-const _ = Gettext.gettext;
+const Domain = Gettext.domain(Config.GETTEXT_PACKAGE);
+const _ = Domain.gettext;
 
 
 const FADE_IN_TIME = 1250;
@@ -50,7 +51,7 @@ const STEPS = 120;
 var IndicatorType = {
     TEXT: 'text',
     SHORT_TEXT: 'short-text',
-    ICON: 'icon'
+    ICON: 'icon',
 };
 
 
@@ -87,12 +88,11 @@ var IndicatorMenu = class extends PopupMenu.PopupMenu {
 
     _createActionButton(iconName, accessibleName) {
         let button = new St.Button({ reactive: true,
-                                     can_focus: true,
-                                     track_hover: true,
-                                     accessible_name: accessibleName,
-                                     style_class: 'extension-pomodoro-indicator-menu-action' });
+            can_focus: true,
+            track_hover: true,
+            accessible_name: accessibleName,
+            style_class: 'extension-pomodoro-indicator-menu-action' });
         button.child = new St.Icon({ gicon: this._loadIcon(iconName), style_class: 'popup-menu-icon' });
-
         return button;
     }
 
@@ -103,11 +103,11 @@ var IndicatorMenu = class extends PopupMenu.PopupMenu {
             return;
         }
 
-        if (this._timerState != Timer.State.POMODORO && Extension.extension && Extension.extension.dialog) {
+        if (this._timerState !== Timer.State.POMODORO && Extension.extension && Extension.extension.dialog) {
             this.itemActivated(BoxPointer.PopupAnimation.NONE);
             Extension.extension.dialog.open(true);
             Extension.extension.dialog.pushModal();
-            return;
+
         }
     }
 
@@ -131,53 +131,52 @@ var IndicatorMenu = class extends PopupMenu.PopupMenu {
     }
 
     _onPauseClicked() {
-        if (!this.indicator.timer.isPaused ()) {
+        if (!this.indicator.timer.isPaused()) {
             this.indicator.timer.pause();
-        }
-        else {
+        } else {
             this.itemActivated(BoxPointer.PopupAnimation.NONE);
             this.indicator.timer.resume();
         }
     }
 
     _populate() {
-        let toggleItem = new PopupMenu.PopupMenuItem(_("Pomodoro Timer"),
-                                           { style_class: 'extension-pomodoro-indicator-menu-toggle',
-                                             reactive: false,
-                                             can_focus: false });
+        let toggleItem = new PopupMenu.PopupMenuItem(_('Pomodoro Timer'),
+            { style_class: 'extension-pomodoro-indicator-menu-toggle',
+                reactive: false,
+                can_focus: false });
         toggleItem.label.y_align = Clutter.ActorAlign.CENTER;
         this.addMenuItem(toggleItem);
 
-        let startAction = this._createActionButton('gnome-pomodoro-start-symbolic', _("Start Timer"));
+        let startAction = this._createActionButton('gnome-pomodoro-start-symbolic', _('Start Timer'));
         startAction.connect('clicked', this._onStartClicked.bind(this));
         toggleItem.add_child(startAction);
 
-        let timerItem = new PopupMenu.PopupMenuItem("",
-                                           { style_class: 'extension-pomodoro-indicator-menu-timer',
-                                             reactive: false,
-                                             can_focus: false });
+        let timerItem = new PopupMenu.PopupMenuItem('',
+            { style_class: 'extension-pomodoro-indicator-menu-timer',
+                reactive: false,
+                can_focus: false });
         timerItem.label.visible = false;
         this.addMenuItem(timerItem);
 
         let timerLabel = new St.Label({ style_class: 'extension-pomodoro-indicator-menu-timer-label',
-                                        y_align: Clutter.ActorAlign.CENTER });
+            y_align: Clutter.ActorAlign.CENTER });
         let timerLabelButton = new St.Button({ reactive: false,
-                                               can_focus: false,
-                                               track_hover: false,
-                                               style_class: 'extension-pomodoro-indicator-menu-timer-label-button' });
+            can_focus: false,
+            track_hover: false,
+            style_class: 'extension-pomodoro-indicator-menu-timer-label-button' });
         timerLabelButton.child = timerLabel;
         timerLabelButton.connect('clicked', this._onTimerClicked.bind(this));
         timerItem.add_child(timerLabelButton);
 
         let hbox = new St.BoxLayout({ x_align: Clutter.ActorAlign.END,
-                                      x_expand: true });
+            x_expand: true });
         timerItem.add_child(hbox);
 
-        let pauseAction = this._createActionButton('gnome-pomodoro-pause-symbolic', _("Pause Timer"));
+        let pauseAction = this._createActionButton('gnome-pomodoro-pause-symbolic', _('Pause Timer'));
         pauseAction.connect('clicked', this._onPauseClicked.bind(this));
         hbox.add_actor(pauseAction);
 
-        let stopAction = this._createActionButton('gnome-pomodoro-stop-symbolic', _("Stop Timer"));
+        let stopAction = this._createActionButton('gnome-pomodoro-pause-symbolic', _('Stop Timer'));
         stopAction.connect('clicked', this._onStopClicked.bind(this));
         hbox.add_actor(stopAction);
 
@@ -188,25 +187,24 @@ var IndicatorMenu = class extends PopupMenu.PopupMenu {
         this.timerLabel = timerLabel;
         this.pauseAction = pauseAction;
 
-        this.addStateMenuItem('pomodoro', _("Pomodoro"));
-        this.addStateMenuItem('short-break', _("Short Break"));
-        this.addStateMenuItem('long-break', _("Long Break"));
+        this.addStateMenuItem('pomodoro', _('Pomodoro'));
+        this.addStateMenuItem('short-break', _('Short Break'));
+        this.addStateMenuItem('long-break', _('Long Break'));
 
         this.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        this.addAction(_("Preferences"), this._activatePreferences.bind(this));
-        this.addAction(_("Stats"), this._activateStats.bind(this));
-        this.addAction(_("Quit"), this._activateQuit.bind(this));
+        this.addAction(_('Preferences'), this._activatePreferences.bind(this));
+        this.addAction(_('Stats'), this._activateStats.bind(this));
+        this.addAction(_('Quit'), this._activateQuit.bind(this));
     }
 
     addStateMenuItem(name, label) {
-        if (!this._stateItems) {
+        if (!this._stateItems)
             this._stateItems = {};
-        }
 
-        let menuItem = this.addAction(label, (menuItem, event) => {
-                this._activateState(name);
-            });
+        let menuItem = this.addAction(label, (unusedMenuItem, unusedEvent) => {
+            this._activateState(name);
+        });
 
         menuItem.add_style_class_name('state-item');
 
@@ -216,12 +214,12 @@ var IndicatorMenu = class extends PopupMenu.PopupMenu {
     }
 
     _onActorMapped(actor) {
-        if (actor.mapped && this._timerUpdateId == 0) {
+        if (actor.mapped && this._timerUpdateId === 0) {
             this._timerUpdateId = this.indicator.timer.connect('update', this._onTimerUpdate.bind(this));
             this._onTimerUpdate();
         }
 
-        if (!actor.mapped && this._timerUpdateId != 0) {
+        if (!actor.mapped && this._timerUpdateId !== 0) {
             this.indicator.timer.disconnect(this._timerUpdateId);
             this._timerUpdateId = 0;
         }
@@ -232,35 +230,33 @@ var IndicatorMenu = class extends PopupMenu.PopupMenu {
         let timerState = timer.getState();
         let remaining = timer.getRemaining();
         let isPaused = timer.isPaused();
-        let isRunning = timerState != Timer.State.NULL;
+        let isRunning = timerState !== Timer.State.NULL;
 
-        if (this._isPaused != isPaused ||
-            this._timerState != timerState)
-        {
+        if (this._isPaused !== isPaused ||
+            this._timerState !== timerState) {
             this._isPaused = isPaused;
             this._timerState = timerState;
 
             this._toggleMenuItem.visible = !isRunning;
             this._timerMenuItem.visible = isRunning;
 
-            this._timerLabelButton.reactive = isPaused || isRunning && timerState != Timer.State.POMODORO;
+            this._timerLabelButton.reactive = isPaused || isRunning && timerState !== Timer.State.POMODORO;
             this.pauseAction.child.gicon = isPaused
-                                               ? this._loadIcon('gnome-pomodoro-start-symbolic')
-                                               : this._loadIcon('gnome-pomodoro-pause-symbolic');
+                ? this._loadIcon('gnome-pomodoro-start-symbolic')
+                : this._loadIcon('gnome-pomodoro-pause-symbolic');
             this.pauseAction.accessible_name = isPaused
-                                               ? _("Resume Timer")
-                                               : _("Pause Timer");
+                ? _('Resume Timer')
+                : _('Pause Timer');
 
             for (let key in this._stateItems) {
                 let stateItem = this._stateItems[key];
 
                 stateItem.visible = isRunning;
 
-                if (key == timerState) {
+                if (key === timerState) {
                     stateItem.setOrnament(PopupMenu.Ornament.DOT);
                     stateItem.add_style_class_name('active');
-                }
-                else {
+                } else {
                     stateItem.setOrnament(PopupMenu.Ornament.NONE);
                     stateItem.remove_style_class_name('active');
                 }
@@ -271,9 +267,9 @@ var IndicatorMenu = class extends PopupMenu.PopupMenu {
     }
 
     _formatTime(remaining) {
-        if (remaining < 0.0) {
+        if (remaining < 0.0)
             remaining = 0.0;
-        }
+
 
         let minutes = Math.floor(remaining / 60);
         let seconds = Math.floor(remaining % 60);
@@ -348,8 +344,8 @@ var TextIndicator = class {
         this.actor._delegate = this;
 
         this.label = new St.Label({ style_class: 'system-status-label',
-                                    x_align: Clutter.ActorAlign.CENTER,
-                                    y_align: Clutter.ActorAlign.CENTER });
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER });
         this.label.clutter_text.line_wrap = false;
         this.label.clutter_text.ellipsize = false;
         this.label.connect('destroy',
@@ -371,17 +367,16 @@ var TextIndicator = class {
         this._state = this.timer.getState();
         this._initialized = true;
 
-        if (this._state == Timer.State.POMODORO) {
+        if (this._state === Timer.State.POMODORO)
             this.actor.set_opacity(FADE_IN_OPACITY * 255);
-        }
-        else {
+
+        else
             this.actor.set_opacity(FADE_OUT_OPACITY * 255);
-        }
+
     }
 
     _onStyleChanged(actor) {
         let themeNode    = actor.get_theme_node();
-        let themeContext = St.ThemeContext.get_for_stage(global.stage);
         let font         = themeNode.get_font();
         let context      = actor.get_pango_context();
         let metrics      = context.get_metrics(font, context.get_language());
@@ -395,9 +390,9 @@ var TextIndicator = class {
     }
 
     _getText(state, remaining) {
-        if (remaining < 0.0) {
+        if (remaining < 0.0)
             remaining = 0.0;
-        }
+
 
         let minutes = Math.floor(remaining / 60);
         let seconds = Math.floor(remaining % 60);
@@ -409,22 +404,21 @@ var TextIndicator = class {
         let state = this.timer.getState();
         let remaining = this.timer.getRemaining();
 
-        if (this._state != state && this._initialized) {
+        if (this._state !== state && this._initialized) {
             this._state = state;
 
-            if (state == Timer.State.POMODORO) {
+            if (state === Timer.State.POMODORO) {
                 this.actor.ease({
                     opacity: FADE_IN_OPACITY * 255,
                     duration: FADE_IN_TIME,
-                    mode: Clutter.AnimationMode.EASE_OUT_QUAD
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                 });
-            }
-            else {
-               this.actor.ease({
+            } else {
+                this.actor.ease({
                     opacity: FADE_OUT_OPACITY * 255,
                     duration: FADE_OUT_TIME,
-                    mode: Clutter.AnimationMode.EASE_OUT_QUAD
-               });
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                });
             }
         }
 
@@ -458,24 +452,24 @@ var ShortTextIndicator = class extends TextIndicator {
 
     _getWidth() {
         return Math.ceil(2 * this._digitWidth +
-                         1 * this._charWidth);
+                         Number(this._charWidth));
     }
 
     _getText(state, remaining) {
-        if (remaining < 0.0) {
+        if (remaining < 0.0)
             remaining = 0.0;
-        }
+
 
         let minutes = Math.round(remaining / 60);
         let seconds = Math.round(remaining % 60);
 
-        if (remaining > 15) {
+        if (remaining > 15)
             seconds = Math.ceil(seconds / 15) * 15;
-        }
 
-        return (remaining > 45)
-                ? "%d′".format(minutes, remaining)
-                : "%d″".format(seconds, remaining);
+
+        return remaining > 45
+            ? '%d′'.format(minutes, remaining)
+            : '%d″'.format(seconds, remaining);
     }
 };
 
@@ -527,16 +521,16 @@ var IconIndicator = class {
 
         let radius    = 0.5 * this._iconSize - 2.0;
         let progress  = this._progress;
-        let isRunning = this._state != Timer.State.NULL;
-        let isBreak   = (this._state == Timer.State.SHORT_BREAK ||
-                         this._state == Timer.State.LONG_BREAK);
+        let isRunning = this._state !== Timer.State.NULL;
+        let isBreak   = this._state === Timer.State.SHORT_BREAK ||
+                         this._state === Timer.State.LONG_BREAK;
 
         cr.translate(0.5 * width, 0.5 * height);
         cr.setOperator(Cairo.Operator.SOURCE);
         cr.setLineCap(Cairo.LineCap.ROUND);
 
-        let angle1 = - 0.5 * Math.PI - 2.0 * Math.PI * Math.min(Math.max(progress, 0.000001), 1.0);
-        let angle2 = - 0.5 * Math.PI;
+        let angle1 = -0.5 * Math.PI - 2.0 * Math.PI * Math.min(Math.max(progress, 0.000001), 1.0);
+        let angle2 = -0.5 * Math.PI;
 
         /* background pie */
         if (isBreak || !isRunning) {
@@ -544,8 +538,7 @@ var IconIndicator = class {
             cr.arcNegative(0, 0, radius, angle1, angle2);
             cr.setLineWidth(2.2);
             cr.stroke();
-        }
-        else {
+        } else {
             Clutter.cairo_set_source_color(cr, this._secondaryColor);
             cr.arc(0, 0, radius, 0.0, 2.0 * Math.PI);
             cr.setLineWidth(2.2);
@@ -583,7 +576,7 @@ var IconIndicator = class {
             red: color.red,
             green: color.green,
             blue: color.blue,
-            alpha: color.alpha * FADE_OUT_OPACITY
+            alpha: color.alpha * FADE_OUT_OPACITY,
         });
     }
 
@@ -624,7 +617,7 @@ Signals.addSignalMethods(IconIndicator.prototype);
 var Indicator = GObject.registerClass(
 class PomodoroIndicator extends PanelMenu.Button {
     _init(timer, type) {
-        super._init(St.Align.START, _("Pomodoro"), true);
+        super._init(St.Align.START, _('Pomodoro'), true);
 
         this.timer  = timer;
         this.widget = null;
@@ -680,15 +673,14 @@ class PomodoroIndicator extends PanelMenu.Button {
 
     _onMappedChanged() {
         if (this.mapped) {
-            if (!this._timerPausedId) {
+            if (!this._timerPausedId)
                 this._timerPausedId = this.timer.connect('paused', this._onTimerPaused.bind(this));
-            }
 
-            if (!this._timerResumedId) {
+
+            if (!this._timerResumedId)
                 this._timerResumedId = this.timer.connect('resumed', this._onTimerResumed.bind(this));
-            }
-        }
-        else {
+
+        } else {
             if (this._timerPausedId) {
                 this.timer.disconnect(this._timerPausedId);
                 this._timerPausedId = 0;
@@ -710,17 +702,17 @@ class PomodoroIndicator extends PanelMenu.Button {
         }
 
         switch (type) {
-            case IndicatorType.TEXT:
-                this.widget = new TextIndicator(this.timer);
-                break;
+        case IndicatorType.TEXT:
+            this.widget = new TextIndicator(this.timer);
+            break;
 
-            case IndicatorType.SHORT_TEXT:
-                this.widget = new ShortTextIndicator(this.timer);
-                break;
+        case IndicatorType.SHORT_TEXT:
+            this.widget = new ShortTextIndicator(this.timer);
+            break;
 
-            default:
-                this.widget = new IconIndicator(this.timer);
-                break;
+        default:
+            this.widget = new IconIndicator(this.timer);
+            break;
         }
 
         this._hbox.add_child(this.widget.actor);
@@ -734,15 +726,15 @@ class PomodoroIndicator extends PanelMenu.Button {
             this._blinkingGroup.setProperty('opacity', 255);
         }
 
-        if (this.timer.isPaused()) {
+        if (this.timer.isPaused())
             this._blink();
-        }
+
     }
 
     _blink() {
-        if (!this.mapped) {
+        if (!this.mapped)
             return;
-        }
+
 
         if (!this._blinking) {
             let ignoreSignals = false;
@@ -752,22 +744,20 @@ class PomodoroIndicator extends PanelMenu.Button {
                         duration: 1750,
                         mode: Clutter.AnimationMode.EASE_IN_OUT_CUBIC,
                         onComplete: () => {
-                            if (!this.mapped) {
+                            if (!this.mapped)
                                 return;
-                            }
+
 
                             if (!ignoreSignals) {
                                 ignoreSignals = true;
-                                fadeOut()
+                                fadeOut();
                                 ignoreSignals = false;
-                            }
-                            else {
+                            } else {
                                 // stop recursion
                             }
                         },
                     });
-                }
-                else {
+                } else {
                     this._onBlinked();
                 }
             };
@@ -781,14 +771,12 @@ class PomodoroIndicator extends PanelMenu.Button {
                                 ignoreSignals = true;
                                 fadeIn();
                                 ignoreSignals = false;
-                            }
-                            else {
+                            } else {
                                 // stop recursion
                             }
-                        }
+                        },
                     });
-                }
-                else {
+                } else {
                     this._onBlinked();
                 }
             };
@@ -813,7 +801,7 @@ class PomodoroIndicator extends PanelMenu.Button {
             this._blinkingGroup.easeProperty('opacity', FADE_IN_OPACITY * 255, {
                 duration: 200,
                 mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                onComplete: this._onBlinked.bind(this)
+                onComplete: this._onBlinked.bind(this),
             });
         }
     }

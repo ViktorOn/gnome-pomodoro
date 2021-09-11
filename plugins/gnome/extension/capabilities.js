@@ -19,10 +19,11 @@
  * For now extension has fixed capabilities. In future they may be
  * dynamically enabled/disabled depending on availability.
  */
+/* exported capabilities */
 
 var capabilities = [
     'notifications',
     'indicator',
     'accelerator',
-    'hide-system-notifications'
+    'hide-system-notifications',
 ];

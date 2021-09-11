@@ -17,16 +17,18 @@
  * Authors: Kamil Prusko <kamilprusko@gmail.com>
  */
 
+const Gettext = imports.gettext;
 const Signals = imports.signals;
 
 const Gio = imports.gi.Gio;
-const Main = imports.ui.main;
 
 const Extension = imports.misc.extensionUtils.getCurrentExtension();
 const Config = Extension.imports.config;
 const DBus = Extension.imports.dbus;
 const Utils = Extension.imports.utils;
 
+const Domain = Gettext.domain(Config.GETTEXT_PACKAGE);
+const _ = Domain.gettext;
 
 var State = {
     NULL: 'null',
@@ -36,19 +38,19 @@ var State = {
 
     label(state) {
         switch (state) {
-            case State.POMODORO:
-                return _("Pomodoro");
+        case State.POMODORO:
+            return _('Pomodoro');
 
-            case State.SHORT_BREAK:
-                return _("Short Break");
+        case State.SHORT_BREAK:
+            return _('Short Break');
 
-            case State.LONG_BREAK:
-                return _("Long Break");
+        case State.LONG_BREAK:
+            return _('Long Break');
 
-            default:
-                return null;
+        default:
+            return null;
         }
-    }
+    },
 };
 
 
@@ -64,14 +66,14 @@ var Timer = class {
         this._proxy = DBus.Pomodoro(this._onInit.bind(this));
 
         this._propertiesChangedId = this._proxy.connect(
-                                       'g-properties-changed',
-                                       this._onPropertiesChanged.bind(this));
+            'g-properties-changed',
+            this._onPropertiesChanged.bind(this));
 
         this._nameWatcherId = Gio.DBus.session.watch_name(
-                                       'org.gnomepomodoro.Pomodoro',
-                                       Gio.BusNameWatcherFlags.AUTO_START,
-                                       this._onNameAppeared.bind(this),
-                                       this._onNameVanished.bind(this));
+            'org.gnomepomodoro.Pomodoro',
+            Gio.BusNameWatcherFlags.AUTO_START,
+            this._onNameAppeared.bind(this),
+            this._onNameVanished.bind(this));
     }
 
     _onNameAppeared() {
@@ -88,20 +90,19 @@ var Timer = class {
         this.emit('service-disconnected');
     }
 
-    _onPropertiesChanged(proxy, properties) {
+    _onPropertiesChanged(proxy, unusedProperties) {
         let state = proxy.State;
         let stateDuration = proxy.StateDuration;
         let elapsed = proxy.Elapsed;
         let isPaused = proxy.IsPaused;
 
-        if (this._state != state || this._stateDuration != stateDuration || this._elapsed > elapsed) {
+        if (this._state !== state || this._stateDuration !== stateDuration || this._elapsed > elapsed) {
             this._state = state;
             this._stateDuration = stateDuration;
-            this._elapsed = elapsed
+            this._elapsed = elapsed;
 
             this.emit('state-changed');
-        }
-        else {
+        } else {
             this._elapsed = elapsed;
         }
 
@@ -124,24 +125,24 @@ var Timer = class {
         if (error) {
             Utils.logWarning(error.message);
 
-            if (error.matches(Gio.DBusError, Gio.DBusError.SERVICE_UNKNOWN)) {
+            if (error.matches(Gio.DBusError, Gio.DBusError.SERVICE_UNKNOWN))
                 this._notifyServiceNotInstalled();
-            }
+
         }
     }
 
     getState() {
-        if (!this._connected || this._proxy.State === null) {
+        if (!this._connected || this._proxy.State === null)
             return State.NULL;
-        }
+
 
         return this._proxy.State;
     }
 
     setState(state, timestamp) {
         this._proxy.SetStateRemote(state,
-                                   timestamp || 0,
-                                   this._onCallback.bind(this));
+            timestamp || 0,
+            this._onCallback.bind(this));
     }
 
     getStateDuration() {
@@ -150,8 +151,8 @@ var Timer = class {
 
     setStateDuration(duration) {
         this._proxy.SetStateDurationRemote(this._proxy.State,
-                                           duration,
-                                           this._onCallback.bind(this));
+            duration,
+            this._onCallback.bind(this));
     }
 
     get stateDuration() {
@@ -160,8 +161,8 @@ var Timer = class {
 
     set stateDuration(value) {
         this._proxy.SetStateDurationRemote(this._proxy.State,
-                                           value,
-                                           this._onCallback.bind(this));
+            value,
+            this._onCallback.bind(this));
     }
 
     getElapsed() {
@@ -171,17 +172,17 @@ var Timer = class {
     getRemaining() {
         let state = this.getState();
 
-        if (state === State.NULL) {
+        if (state === State.NULL)
             return 0.0;
-        }
+
 
         return Math.ceil(this._proxy.StateDuration - this._proxy.Elapsed);
     }
 
     getProgress() {
-        return (this._connected && this._proxy.StateDuration > 0)
-                ? this._proxy.Elapsed / this._proxy.StateDuration
-                : 0.0;
+        return this._connected && this._proxy.StateDuration > 0
+            ? this._proxy.Elapsed / this._proxy.StateDuration
+            : 0.0;
     }
 
     isPaused() {
@@ -213,12 +214,12 @@ var Timer = class {
     }
 
     toggle() {
-        if (this.getState() === State.NULL) {
+        if (this.getState() === State.NULL)
             this.start();
-        }
-        else {
+
+        else
             this.stop();
-        }
+
     }
 
     isBreak() {
@@ -236,17 +237,17 @@ var Timer = class {
     }
 
     quit() {
-        this._proxy.QuitRemote((result, error) => {
+        this._proxy.QuitRemote(() => {
             Utils.disableExtension(Config.EXTENSION_UUID);
         });
     }
 
     _notifyServiceNotInstalled() {
-        Extension.extension.notifyIssue(_("Failed to run <i>%s</i> service").format(Config.PACKAGE_NAME));
+        Extension.extension.notifyIssue(_('Failed to run <i>%s</i> service').format(Config.PACKAGE_NAME));
     }
 
     destroy() {
-        if (this._propertiesChangedId != 0) {
+        if (this._propertiesChangedId !== 0) {
             this._proxy.disconnect(this._propertiesChangedId);
             this._propertiesChangedId = 0;
         }

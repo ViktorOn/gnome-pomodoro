@@ -17,6 +17,7 @@
  * Authors: Kamil Prusko <kamilprusko@gmail.com>
  *
  */
+/* exported PomodoroProxy, Pomodoro, PomodoroExtension */
 
 const Signals = imports.signals;
 const Gio = imports.gi.Gio;
@@ -81,24 +82,24 @@ var PomodoroExtension = class {
         this.initialized = false;
     }
 
-    _onNameAcquired(name) {
+    _onNameAcquired(unusedName) {
         this.initialized = true;
 
         this.emit('name-acquired');
     }
 
-    _onNameLost(name) {
+    _onNameLost(unusedName) {
         this.initialized = false;
 
         this.emit('name-lost');
     }
 
     run() {
-        if (this._dbusId == 0) {
+        if (this._dbusId === 0) {
             this._dbusId = Gio.DBus.session.own_name('org.gnomepomodoro.Pomodoro.Extension',
-                                                     Gio.BusNameOwnerFlags.REPLACE,
-                                                     this._onNameAcquired.bind(this),
-                                                     this._onNameLost.bind(this));
+                Gio.BusNameOwnerFlags.REPLACE,
+                this._onNameAcquired.bind(this),
+                this._onNameLost.bind(this));
         }
     }
 

@@ -17,6 +17,7 @@
  * Authors: Kamil Prusko <kamilprusko@gmail.com>
  *
  */
+/* exported Presence */
 
 const Gio = imports.gi.Gio;
 
@@ -37,9 +38,9 @@ var Presence = class {
         // Setup a patch for suppressing presence handlers.
         // When applied the main presence controller becomes gnome-pomodoro.
         this._patch = new Utils.Patch(MessageTray.MessageTray.prototype, {
-            _onStatusChanged(status) {
+            _onStatusChanged(unusedStatus) {
                 this._updateState();
-            }
+            },
         });
         this._patch.connect('applied', this._onPatchApplied.bind(this));
         this._patch.connect('reverted', this._onPatchReverted.bind(this));
@@ -52,20 +53,20 @@ var Presence = class {
     setBusy(value) {
         this._busy = value;
 
-        if (!this._patch.applied) {
+        if (!this._patch.applied)
             this._patch.apply();
-        }
-        else {
+
+        else
             this._onPatchApplied();
-        }
+
 
         this._settings.set_boolean('show-banners', !value);
     }
 
     setDefault() {
-        if (this._patch.applied) {
+        if (this._patch.applied)
             this._patch.revert();
-        }
+
 
         this._settings.set_boolean('show-banners', true);
     }
@@ -74,8 +75,7 @@ var Presence = class {
         try {
             Main.messageTray._busy = this._busy;
             Main.messageTray._onStatusChanged();
-        }
-        catch (error) {
+        } catch (error) {
             Utils.logWarning(error.message);
         }
     }
@@ -84,8 +84,7 @@ var Presence = class {
         try {
             let status = Main.messageTray._presence.status;
             Main.messageTray._onStatusChanged(status);
-        }
-        catch (error) {
+        } catch (error) {
             Utils.logWarning(error.message);
         }
     }

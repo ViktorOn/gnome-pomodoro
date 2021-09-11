@@ -17,6 +17,7 @@
  * Authors: Kamil Prusko <kamilprusko@gmail.com>
  *
  */
+/* exported Patch, TransitionGroup, arrayContains, getFocusedWindowInfo, logError, logWarning, versionCheck, disableExtension */
 
 const Signals = imports.signals;
 
@@ -32,7 +33,7 @@ const ENABLED_EXTENSIONS_KEY = 'enabled-extensions';
 const VIDEO_PLAYER_CATEGORIES = [
     ['Player', 'Video'],
     ['Player', 'AudioVideo'],
-    ['Game']
+    ['Game'],
 ];
 
 
@@ -46,17 +47,17 @@ var Patch = class {
         for (let name in this.overrides) {
             this.initial[name] = this.object[name];
 
-            if (typeof(this.initial[name]) == 'undefined') {
+            if (typeof this.initial[name] === 'undefined')
                 logWarning('Property "%s" for %s is not defined'.format(name, this.object));
-            }
+
         }
     }
 
     apply() {
         if (!this.applied) {
-            for (let name in this.overrides) {
+            for (let name in this.overrides)
                 this.object[name] = this.overrides[name];
-            }
+
 
             this.applied = true;
 
@@ -66,9 +67,9 @@ var Patch = class {
 
     revert() {
         if (this.applied) {
-            for (let name in this.overrides) {
+            for (let name in this.overrides)
                 this.object[name] = this.initial[name];
-            }
+
 
             this.applied = false;
 
@@ -99,9 +100,9 @@ var TransitionGroup = class {
 
     _findActor(actor) {
         for (var index = 0; index < this._actors.length; index++) {
-            if (this._actors[index].actor === actor) {
+            if (this._actors[index].actor === actor)
                 return index;
-            }
+
         }
 
         return -1;
@@ -110,20 +111,20 @@ var TransitionGroup = class {
     addActor(actor) {
         let index = this._findActor(actor);
 
-        if (!actor || index >= 0) {
+        if (!actor || index >= 0)
             return;
-        }
+
 
         this._actors.push({
-            actor: actor,
+            actor,
             destroyId: actor.connect('destroy', () => {
                 this.removeActor(actor);
-            })
+            }),
         });
 
-        if (!this._referenceActor) {
+        if (!this._referenceActor)
             this._setReferenceActor(actor);
-        }
+
     }
 
     removeActor(actor) {
@@ -134,25 +135,25 @@ var TransitionGroup = class {
             actor.disconnect(meta.destroyId);
         }
 
-        if (this._referenceActor === actor) {
+        if (this._referenceActor === actor)
             this._setReferenceActor(this._actors.length > 0 ? this._actors[0].actor : null);
-        }
+
     }
 
     easeProperty(name, target, params) {
         let onStopped = params.onStopped;
         let onComplete = params.onComplete;
 
-        this._actors.forEach((meta) => {
+        this._actors.forEach(meta => {
             let localParams = Object.assign({
-                onStopped: (isFinished) => {
+                onStopped: isFinished => {
                     if (onStopped && meta.actor === this._referenceActor)
                         onStopped(isFinished);
                 },
                 onComplete: () => {
-                     if (onComplete && meta.actor === this._referenceActor)
-                         onComplete();
-                }
+                    if (onComplete && meta.actor === this._referenceActor)
+                        onComplete();
+                },
             }, params);
 
             meta.actor.ease_property(name, target, localParams);
@@ -161,32 +162,32 @@ var TransitionGroup = class {
 
     setProperty(name, target) {
         let properties = {};
-        properties[name] = target
+        properties[name] = target;
 
-        this._actors.forEach((meta) => {
+        this._actors.forEach(meta => {
             meta.actor.set(properties);
         });
     }
 
     removeAllTransitions() {
-        this._actors.forEach((meta) => {
+        this._actors.forEach(meta => {
             meta.actor.remove_all_transitions();
         });
     }
 
     destroy() {
-        this._actors.slice().forEach((meta) => {
+        this._actors.slice().forEach(meta => {
             this.removeActor(meta.actor);
         });
     }
-}
+};
 
 
 function arrayContains(array1, array2) {
     for (let i = 0; i < array2.length; i++) {
-        if (array1.indexOf(array2[i]) < 0) {
+        if (array1.indexOf(array2[i]) < 0)
             return false;
-        }
+
     }
 
     return true;
@@ -199,10 +200,10 @@ function getFocusedWindowInfo() {
     let window = global.display.focus_window;
 
     let result = {
-        app: app,
-        window: window,
+        app,
+        window,
         isPlayer: false,
-        isFullscreen: false
+        isFullscreen: false,
     };
 
     if (appInfo) {
@@ -245,9 +246,9 @@ function versionCheck(required) {
     if (requiredArray[0] <= currentArray[0] &&
         requiredArray[1] <= currentArray[1] &&
         (requiredArray[2] <= currentArray[2] ||
-         requiredArray[2] == undefined)) {
+         requiredArray[2] === undefined))
         return true;
-    }
+
 
     return false;
 }
@@ -257,7 +258,7 @@ function disableExtension(uuid) {
     let enabledExtensions = global.settings.get_strv(ENABLED_EXTENSIONS_KEY);
     let extensionIndex = enabledExtensions.indexOf(uuid);
 
-    if (extensionIndex != -1) {
+    if (extensionIndex !== -1) {
         enabledExtensions.splice(extensionIndex, 1);
         global.settings.set_strv(ENABLED_EXTENSIONS_KEY, enabledExtensions);
     }

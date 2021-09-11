@@ -17,15 +17,15 @@
  * Authors: Kamil Prusko <kamilprusko@gmail.com>
  *
  */
+/* exported getDefaultSource, NotificationPolicy, Source, Notification, PomodoroStartNotification, PomodoroEndNotification, ScreenShieldNotification, IssueNotification, TimerBanner */
 
-const Signals = imports.signals;
+const Gettext = imports.gettext;
 
-const { Clutter, GLib, GObject, Meta, St } = imports.gi;
+const { GLib, GObject, St } = imports.gi;
 
 const Calendar = imports.ui.calendar;
 const Main = imports.ui.main;
 const MessageTray = imports.ui.messageTray;
-const Params = imports.misc.params;
 const Util = imports.misc.util;
 
 const Extension = imports.misc.extensionUtils.getCurrentExtension();
@@ -33,9 +33,9 @@ const Config = Extension.imports.config;
 const Timer = Extension.imports.timer;
 const Utils = Extension.imports.utils;
 
-const Gettext = imports.gettext.domain(Config.GETTEXT_PACKAGE);
-const _ = Gettext.gettext;
-const ngettext = Gettext.ngettext;
+const Domain = Gettext.domain(Config.GETTEXT_PACKAGE);
+const _ = Domain.gettext;
+const N_ = Domain.ngettext;
 
 
 function getDefaultSource() {
@@ -45,10 +45,10 @@ function getDefaultSource() {
     if (!source) {
         source = new Source();
         let destroyId = source.connect('destroy',
-            (source) => {
-                if (extension.notificationSource === source) {
+            () => {
+                if (extension.notificationSource === source)
                     extension.notificationSource = null;
-                }
+
 
                 source.disconnect(destroyId);
             });
@@ -81,11 +81,11 @@ var NotificationPolicy = GObject.registerClass({
 var Source = GObject.registerClass(
 class PomodoroSource extends MessageTray.Source {
     _init() {
-        let icon_name = 'org.gnomepomodoro.Pomodoro-symbolic';
+        let iconName = 'org.gnomepomodoro.Pomodoro-symbolic';
 
-        super._init(_("Pomodoro Timer"), icon_name);
+        super._init(_('Pomodoro Timer'), iconName);
 
-        this.ICON_NAME = icon_name;
+        this.ICON_NAME = iconName;
 
         this._idleId = 0;
 
@@ -94,16 +94,14 @@ class PomodoroSource extends MessageTray.Source {
         let patch = new Utils.Patch(Calendar.NotificationSection.prototype, {
             _onNotificationAdded(source, notification) {
                 if (notification instanceof PomodoroEndNotification ||
-                    notification instanceof PomodoroStartNotification)
-                {
+                    notification instanceof PomodoroStartNotification) {
                     let message = new TimerBanner(notification);
 
                     this.addMessageAtIndex(message, this._nUrgent, this.mapped);
-                }
-                else {
+                } else {
                     patch.initial._onNotificationAdded.bind(this)(source, notification);
                 }
-            }
+            },
         });
         this._patch = patch;
         this._patch.apply();
@@ -130,35 +128,35 @@ class PomodoroSource extends MessageTray.Source {
 
     _lastNotificationRemoved() {
         this._idleId = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-            if (this.notifications.length == 0) {
+            if (this.notifications.length === 0)
                 this.destroy();
-            }
+
 
             return GLib.SOURCE_REMOVE;
         });
         GLib.Source.set_name_by_id(this._idleId,
-                                   '[gnome-pomodoro] this._lastNotificationRemoved');
+            '[gnome-pomodoro] this._lastNotificationRemoved');
     }
 
     /* override parent method */
     _onNotificationDestroy(notification) {
         let index = this.notifications.indexOf(notification);
-        if (index < 0) {
+        if (index < 0)
             return;
-        }
+
 
         this.notifications.splice(index, 1);
         this.countUpdated();
 
-        if (this.notifications.length == 0) {
+        if (this.notifications.length === 0)
             this._lastNotificationRemoved();
-        }
+
     }
 
     destroyNotifications() {
         let notifications = this.notifications.slice();
 
-        notifications.forEach((notification) => {
+        notifications.forEach(notification => {
             notification.destroy();
         });
     }
@@ -184,9 +182,9 @@ class PomodoroNotification extends MessageTray.Notification {
     }
 
     show() {
-        if (!this.source) {
+        if (!this.source)
             this.source = getDefaultSource();
-        }
+
 
         if (this.source) {
             // Popup notification regardless of session busy status
@@ -197,13 +195,12 @@ class PomodoroNotification extends MessageTray.Notification {
 
             this.acknowledged = false;
 
-            if (!Main.messageTray.contains(this.source)) {
+            if (!Main.messageTray.contains(this.source))
                 Main.messageTray.add(this.source);
-            }
+
 
             this.source.showNotification(this);
-        }
-        else {
+        } else {
             Utils.logWarning('Called Notification.show() after destroy()');
         }
     }
@@ -232,7 +229,7 @@ var PomodoroStartNotification = GObject.registerClass({
      */
 
     _init(timer) {
-        let title = _("Pomodoro");
+        let title = _('Pomodoro');
 
         // TODO: try customContent param
 
@@ -247,7 +244,7 @@ var PomodoroStartNotification = GObject.registerClass({
         this._timerStateChangedId = this.timer.connect('state-changed', this._onTimerStateChanged.bind(this));
 
         this.connect('destroy', () => {
-            if (this._timerStateChangedId != 0) {
+            if (this._timerStateChangedId !== 0) {
                 this.timer.disconnect(this._timerStateChangedId);
                 this._timerStateChangedId = 0;
             }
@@ -258,30 +255,29 @@ var PomodoroStartNotification = GObject.registerClass({
 
     _onTimerStateChanged() {
         let title,
-            message,
             resident,
             state = this.timer.getState();
 
-        if (this._timerState != state) {
+        if (this._timerState !== state) {
             this._timerState = state;
 
             switch (state) {
-                case Timer.State.POMODORO:
-                    title = _("Pomodoro");
-                    // message = _("Time to work");
-                    resident = false;
-                    break;
+            case Timer.State.POMODORO:
+                title = _('Pomodoro');
+                // message = _("Time to work");
+                resident = false;
+                break;
 
-                case Timer.State.SHORT_BREAK:
-                case Timer.State.LONG_BREAK:
-                    title = _("Break is about to end");
-                    // message = _("Click to start Pomodoro");
-                    resident = true;
-                    break;
+            case Timer.State.SHORT_BREAK:
+            case Timer.State.LONG_BREAK:
+                title = _('Break is about to end');
+                // message = _("Click to start Pomodoro");
+                resident = true;
+                break;
 
-                default:
-                    // keep notification as is until destroyed
-                    return;
+            default:
+                // keep notification as is until destroyed
+                return;
             }
 
             this.title = title;
@@ -289,9 +285,9 @@ var PomodoroStartNotification = GObject.registerClass({
             this.setResident(resident);
             this.setTransient(!resident);
 
-            if (this.acknowledged) {
+            if (this.acknowledged)
                 this.acknowledged = false;
-            }
+
 
             this.emit('changed');
         }
@@ -303,22 +299,23 @@ var PomodoroStartNotification = GObject.registerClass({
         let seconds = Math.round(remaining % 60);
 
         return remaining > 45
-                ? ngettext("%d minute remaining",
-                           "%d minutes remaining", minutes).format(minutes)
-                : ngettext("%d second remaining",
-                           "%d seconds remaining", seconds).format(seconds);
+            ? N_('%d minute remaining',
+                '%d minutes remaining', minutes).format(minutes)
+            : N_('%d second remaining',
+                '%d seconds remaining', seconds).format(seconds);
     }
 
     /**
-     * createBanner() is used only to display a notification popup.
-     * Banners in calendar menu or the lock screen are made by GNOME Shell.
+     * createBanner:
+     * Used only to display a notification popup. Banners in calendar menu or the lock screen are made by GNOME Shell.
+     * @returns {object} - a notification banner
      */
     createBanner() {
         let banner,
             extendButton;
 
         banner = super.createBanner();
-        banner.canClose = function() {
+        banner.canClose = function () {
             return false;
         };
 
@@ -334,27 +331,26 @@ var PomodoroStartNotification = GObject.registerClass({
         };
         let onNotificationChanged = () => {
             if (this.timer.isBreak()) {
-                extendButton = banner.addAction(_("+1 Minute"), () => {
+                extendButton = banner.addAction(_('+1 Minute'), () => {
                     this.timer.stateDuration += 60.0;
                 });
-            }
-            else if (extendButton) {
+            } else if (extendButton) {
                 extendButton.destroy();
                 extendButton = null;
             }
         };
         let onNotificationDestroy = () => {
-            if (timerUpdateId != 0) {
+            if (timerUpdateId !== 0) {
                 this.timer.disconnect(timerUpdateId);
                 timerUpdateId = 0;
             }
 
-            if (notificationChangedId != 0) {
+            if (notificationChangedId !== 0) {
                 this.disconnect(notificationChangedId);
                 notificationChangedId = 0;
             }
 
-            if (notificationDestroyId != 0) {
+            if (notificationDestroyId !== 0) {
                 this.disconnect(notificationDestroyId);
                 notificationDestroyId = 0;
             }
@@ -395,7 +391,7 @@ var PomodoroEndNotification = GObject.registerClass({
         this._timerStateChangedId = this.timer.connect('state-changed', this._onTimerStateChanged.bind(this));
 
         this.connect('destroy', () => {
-            if (this._timerStateChangedId != 0) {
+            if (this._timerStateChangedId !== 0) {
                 this.timer.disconnect(this._timerStateChangedId);
                 this._timerStateChangedId = 0;
             }
@@ -406,29 +402,28 @@ var PomodoroEndNotification = GObject.registerClass({
 
     _onTimerStateChanged() {
         let title,
-            message,
             resident,
             state = this.timer.getState();
 
-        if (this._timerState != state) {
+        if (this._timerState !== state) {
             this._timerState = state;
 
             switch (state) {
-                case Timer.State.POMODORO:
-                    title = _("Pomodoro is about to end");
-                    // message = _("Click to start a break");
-                    resident = true;
-                    break;
+            case Timer.State.POMODORO:
+                title = _('Pomodoro is about to end');
+                // message = _("Click to start a break");
+                resident = true;
+                break;
 
-                case Timer.State.SHORT_BREAK:
-                case Timer.State.LONG_BREAK:
-                    title = _("Take a break");
-                    resident = true;
-                    break;
+            case Timer.State.SHORT_BREAK:
+            case Timer.State.LONG_BREAK:
+                title = _('Take a break');
+                resident = true;
+                break;
 
-                default:
-                    // keep notification as is until destroyed
-                    return;
+            default:
+                // keep notification as is until destroyed
+                return;
             }
 
             this.title = title;
@@ -436,9 +431,9 @@ var PomodoroEndNotification = GObject.registerClass({
             this.setResident(resident);
             this.setTransient(!resident);
 
-            if (this.acknowledged) {
+            if (this.acknowledged)
                 this.acknowledged = false;
-            }
+
 
             this.emit('changed');
         }
@@ -450,31 +445,31 @@ var PomodoroEndNotification = GObject.registerClass({
         let seconds = Math.round(remaining % 60);
 
         return remaining > 45
-                ? ngettext("%d minute remaining",
-                           "%d minutes remaining", minutes).format(minutes)
-                : ngettext("%d second remaining",
-                           "%d seconds remaining", seconds).format(seconds);
+            ? N_('%d minute remaining',
+                '%d minutes remaining', minutes).format(minutes)
+            : N_('%d second remaining',
+                '%d seconds remaining', seconds).format(seconds);
     }
 
     createBanner() {
         let banner;
 
         banner = super.createBanner();
-        banner.canClose = function() {
+        banner.canClose = function () {
             return false;
         };
-        banner.addAction(_("Skip Break"), () => {
+        banner.addAction(_('Skip Break'), () => {
             this.timer.setState(Timer.State.POMODORO);
 
             this.destroy();
         });
-        banner.addAction(_("+1 Minute"), () => {
+        banner.addAction(_('+1 Minute'), () => {
             this.timer.stateDuration += 60.0;
         });
 
-        if (this.timer.getElapsed() > 15.0) {
+        if (this.timer.getElapsed() > 15.0)
             banner.setTitle(Timer.State.label(this.timer.getState()));
-        }
+
 
         let onTimerUpdate = () => {
             if (banner.bodyLabel) {
@@ -487,12 +482,12 @@ var PomodoroEndNotification = GObject.registerClass({
             }
         };
         let onNotificationDestroy = () => {
-            if (timerUpdateId != 0) {
+            if (timerUpdateId !== 0) {
                 this.timer.disconnect(timerUpdateId);
                 timerUpdateId = 0;
             }
 
-            if (notificationDestroyId != 0) {
+            if (notificationDestroyId !== 0) {
                 this.disconnect(notificationDestroyId);
                 notificationDestroyId = 0;
             }
@@ -526,11 +521,11 @@ var ScreenShieldNotification = GObject.registerClass({
         this.setUrgency(MessageTray.Urgency.HIGH);
 
         let patch = new Utils.Patch(Main.screenShield, {
-            emit(name /* , arg1, arg2 */) {
-                if (name != 'wake-up-screen') {
+            emit(name) {
+                if (name !== 'wake-up-screen')
                     patch.initial.emit.apply(patch.object, arguments);
-                }
-            }
+
+            },
         });
         this._screenShieldPatch = patch;
 
@@ -542,7 +537,7 @@ var ScreenShieldNotification = GObject.registerClass({
         this._timerUpdateId = this.timer.connect('update', this._onTimerUpdate.bind(this));
 
         this.connect('destroy', () => {
-            if (this._timerUpdateId != 0) {
+            if (this._timerUpdateId !== 0) {
                 this.timer.disconnect(this._timerUpdateId);
                 this._timerUpdateId = 0;
             }
@@ -562,9 +557,9 @@ var ScreenShieldNotification = GObject.registerClass({
 
         // HACK: "Pomodoro" in application name may be confusing with state name,
         //       so replace application name with current state.
-        if (this.source !== null) {
+        if (this.source !== null)
             this.source.setTitle(title ? title : '');
-        }
+
     }
 
     _onTimerElapsedChanged() {
@@ -572,15 +567,15 @@ var ScreenShieldNotification = GObject.registerClass({
         let minutes = Math.round(remaining / 60);
         let seconds = Math.round(remaining % 60);
 
-        if (remaining > 15) {
+        if (remaining > 15)
             seconds = Math.ceil(seconds / 15) * 15;
-        }
 
-        this.bannerBodyText = (remaining > 45)
-                ? ngettext("%d minute remaining",
-                           "%d minutes remaining", minutes).format(minutes)
-                : ngettext("%d second remaining",
-                           "%d seconds remaining", seconds).format(seconds);
+
+        this.bannerBodyText = remaining > 45
+            ? N_('%d minute remaining',
+                '%d minutes remaining', minutes).format(minutes)
+            : N_('%d second remaining',
+                '%d seconds remaining', seconds).format(seconds);
     }
 
     _onTimerUpdate() {
@@ -590,7 +585,7 @@ var ScreenShieldNotification = GObject.registerClass({
             stateChanged = false,
             elapsedChanged = false;
 
-        if (this._timerState != timerState || this._isPaused != isPaused) {
+        if (this._timerState !== timerState || this._isPaused !== isPaused) {
             this._timerState = timerState;
             this._isPaused = isPaused;
 
@@ -600,9 +595,9 @@ var ScreenShieldNotification = GObject.registerClass({
 
         this._onTimerElapsedChanged();
 
-        if (this.bannerBodyText !== bannerBodyText) {
+        if (this.bannerBodyText !== bannerBodyText)
             elapsedChanged = true;
-        }
+
 
         if (stateChanged) {
             // "updated" is original MessageTray.Notification signal
@@ -610,11 +605,10 @@ var ScreenShieldNotification = GObject.registerClass({
             this.emit('changed');
 
             // HACK: Force screen shield to update notification body
-            if (this.source !== null) {
+            if (this.source !== null)
                 this.source.notify('count');
-            }
-        }
-        else if (elapsedChanged) {
+
+        } else if (elapsedChanged) {
             this.emit('changed');
 
             if (this.source !== null) {
@@ -642,7 +636,7 @@ class PomodoroIssueNotification extends MessageTray.Notification {
 
     _init(message) {
         let source = getDefaultSource();
-        let title  = _("Pomodoro Timer");
+        let title  = _('Pomodoro Timer');
         let url    = Config.PACKAGE_BUGREPORT;
 
         super._init(source, title, message, { bannerMarkup: true });
@@ -650,16 +644,15 @@ class PomodoroIssueNotification extends MessageTray.Notification {
         this.setTransient(true);
         this.setUrgency(MessageTray.Urgency.HIGH);
 
-        this.addAction(_("Report issue"), () => {
-                Util.trySpawnCommandLine('xdg-open ' + GLib.shell_quote(url));
-                this.destroy();
-            });
+        this.addAction(_('Report issue'), () => {
+            Util.trySpawnCommandLine(`xdg-open ${GLib.shell_quote(url)}`);
+            this.destroy();
+        });
     }
 
     show() {
-        if (!Main.messageTray.contains(this.source)) {
+        if (!Main.messageTray.contains(this.source))
             Main.messageTray.add(this.source);
-        }
 
         this.source.showNotification(this);
     }
@@ -680,14 +673,14 @@ class PomodoroTimerBanner extends Calendar.NotificationMessage {
         this._timerUpdateId = this.timer.connect('update', this._onTimerUpdate.bind(this));
         this._onTimerUpdate();
 
-        this.addAction(_("Skip"), () => {
-                this.timer.skip();
+        this.addAction(_('Skip'), () => {
+            this.timer.skip();
 
-                notification.destroy();
-            });
-        this.addAction(_("+1 Minute"), () => {
-                this.timer.stateDuration += 60.0;
-            });
+            notification.destroy();
+        });
+        this.addAction(_('+1 Minute'), () => {
+            this.timer.stateDuration += 60.0;
+        });
 
         this.connect('close', this._onClose.bind(this));
     }
@@ -706,9 +699,9 @@ class PomodoroTimerBanner extends Calendar.NotificationMessage {
 
     addAction(label, callback) {
         let button = new St.Button({ style_class: 'extension-pomodoro-message-action',
-                                     label: label,
-                                     x_expand: true,
-                                     can_focus: true });
+            label,
+            x_expand: true,
+            can_focus: true });
 
         return this.addButton(button, callback);
     }
@@ -719,26 +712,26 @@ class PomodoroTimerBanner extends Calendar.NotificationMessage {
         let seconds = Math.round(remaining % 60);
 
         return remaining > 45
-                ? ngettext("%d minute remaining",
-                           "%d minutes remaining", minutes).format(minutes)
-                : ngettext("%d second remaining",
-                           "%d seconds remaining", seconds).format(seconds);
+            ? N_('%d minute remaining',
+                '%d minutes remaining', minutes).format(minutes)
+            : N_('%d second remaining',
+                '%d seconds remaining', seconds).format(seconds);
     }
 
     _onTimerStateChanged() {
         let state = this.timer.getState();
         let title;
 
-        if (this.timer.isPaused()) {
-            title = _("Paused");
-        }
-        else {
-            title = Timer.State.label(state);
-        }
+        if (this.timer.isPaused())
+            title = _('Paused');
 
-        if (title && this.titleLabel) {
+        else
+            title = Timer.State.label(state);
+
+
+        if (title && this.titleLabel)
             this.setTitle(title);
-        }
+
     }
 
     _onTimerElapsedChanged() {
@@ -756,24 +749,24 @@ class PomodoroTimerBanner extends Calendar.NotificationMessage {
         let timerState = this.timer.getState();
         let isPaused = this.timer.isPaused();
 
-        if (this._timerState != timerState || this._isPaused != isPaused) {
+        if (this._timerState !== timerState || this._isPaused !== isPaused) {
             this._timerState = timerState;
             this._isPaused = isPaused;
 
             this._onTimerStateChanged();
         }
 
-        if (this._timerState != Timer.State.NULL) {
+        if (this._timerState !== Timer.State.NULL)
             this._onTimerElapsedChanged();
-        }
+
     }
 
     /* override parent method */
-    _onUpdated(n, clear) {
+    _onUpdated(unusedN, unusedClear) {
     }
 
     _onClose() {
-        if (this._timerUpdateId != 0) {
+        if (this._timerUpdateId !== 0) {
             this.timer.disconnect(this._timerUpdateId);
             this._timerUpdateId = 0;
         }

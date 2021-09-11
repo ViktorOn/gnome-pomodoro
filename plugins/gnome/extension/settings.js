@@ -18,8 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+/* exported getSettings */
 
-const Gettext = imports.gettext;
 const Gio = imports.gi.Gio;
 
 const Extension = imports.misc.extensionUtils.getCurrentExtension();
@@ -31,17 +31,16 @@ function getSettings(schemaId) {
     let schemaSource;
     if (schemaDir.query_exists(null)) {
         schemaSource = Gio.SettingsSchemaSource.new_from_directory(schemaDir.get_path(),
-                                                                   Gio.SettingsSchemaSource.get_default(),
-                                                                   false);
-    }
-    else {
+            Gio.SettingsSchemaSource.get_default(),
+            false);
+    } else {
         schemaSource = Gio.SettingsSchemaSource.get_default();
     }
 
     let schema = schemaSource.lookup(schemaId, true);
     if (!schema) {
-        throw new Error('Schema ' + schemaId + ' could not be found for extension '
-                        + Extension.metadata.uuid + '. Please check your installation.');
+        throw new Error(`Schema ${schemaId} could not be found for extension ${
+            Extension.metadata.uuid}. Please check your installation.`);
     }
 
     return new Gio.Settings({ settings_schema: schema });

@@ -17,8 +17,9 @@
  * Authors: Kamil Prusko <kamilprusko@gmail.com>
  *
  */
+/* exported State, BlurredLightbox, ModalDialog, PomodoroEndDialog */
 
-const Signals = imports.signals;
+const Gettext = imports.gettext;
 
 const { Atk, Clutter, GLib, GObject, Meta, Shell, St, Pango } = imports.gi;
 
@@ -30,12 +31,10 @@ const Params = imports.misc.params;
 
 const Extension = imports.misc.extensionUtils.getCurrentExtension();
 const Config = Extension.imports.config;
-const Timer = Extension.imports.timer;
 const Utils = Extension.imports.utils;
 
-const Gettext = imports.gettext.domain(Config.GETTEXT_PACKAGE);
-const _ = Gettext.gettext;
-const ngettext = Gettext.ngettext;
+const Domain = Gettext.domain(Config.GETTEXT_PACKAGE);
+const _ = Domain.gettext;
 
 
 /* Time between user input events before making dialog modal.
@@ -67,7 +66,7 @@ var State = {
     OPENED: 0,
     CLOSED: 1,
     OPENING: 2,
-    CLOSING: 3
+    CLOSING: 3,
 };
 
 
@@ -97,8 +96,7 @@ class PomodoroBlurredLightbox extends Lightbox.Lightbox {
             this.set_child(this._uiGroup);
 
             this.set({ opacity: 0, style_class: 'extension-pomodoro-lightbox-blurred' });
-        }
-        else {
+        } else {
             this._uiGroup = null;
 
             this.set({ opacity: 0, style_class: 'extension-pomodoro-lightbox' });
@@ -186,20 +184,20 @@ class PomodoroBlurredLightbox extends Lightbox.Lightbox {
 var ModalDialog = GObject.registerClass({
     Properties: {
         'state': GObject.ParamSpec.int('state', 'Dialog state', 'state',
-                                       GObject.ParamFlags.READABLE,
-                                       Math.min(...Object.values(State)),
-                                       Math.max(...Object.values(State)),
-                                       State.CLOSED),
+            GObject.ParamFlags.READABLE,
+            Math.min(...Object.values(State)),
+            Math.max(...Object.values(State)),
+            State.CLOSED),
     },
     Signals: { 'opened': {}, 'opening': {}, 'closed': {}, 'closing': {} },
 }, class PomodoroModalDialog extends St.Widget {
     _init() {
         super._init({ style_class: 'extension-pomodoro-dialog',
-                      accessible_role: Atk.Role.DIALOG,
-                      layout_manager: new Clutter.BinLayout(),
-                      reactive: false,
-                      visible: false,
-                      opacity: 0 });
+            accessible_role: Atk.Role.DIALOG,
+            layout_manager: new Clutter.BinLayout(),
+            reactive: false,
+            visible: false,
+            opacity: 0 });
 
         this._state = State.CLOSED;
         this._hasModal = false;
@@ -209,17 +207,14 @@ var ModalDialog = GObject.registerClass({
         this._keyFocusOutId = 0;
         this._monitorConstraint = new Layout.MonitorConstraint();
         this._monitorConstraint.primary = true;
-        this._stageConstraint = new Clutter.BindConstraint({
-                                       source: global.stage,
-                                       coordinate: Clutter.BindCoordinate.ALL });
+        this._stageConstraint = new Clutter.BindConstraint({ source: global.stage,
+            coordinate: Clutter.BindCoordinate.ALL });
         this.add_constraint(this._stageConstraint);
 
-        if (global.backend.get_core_idle_monitor !== undefined) {
+        if (global.backend.get_core_idle_monitor !== undefined)
             this._idleMonitor = global.backend.get_core_idle_monitor();
-        }
-        else {
+        else
             this._idleMonitor = Meta.IdleMonitor.get_core();  // TODO: remove along support for gnome-shell 40
-        }
 
         this.connect('destroy', this._onDestroy.bind(this));
 
@@ -232,7 +227,7 @@ var ModalDialog = GObject.registerClass({
 
         // Lightbox will be a direct child of the ModalDialog
         this._lightbox = new BlurredLightbox(this,
-                                             { inhibitEvents: false });
+            { inhibitEvents: false });
         this._lightbox.highlight(this._layout);
 
         global.stage.add_actor(this);
@@ -244,9 +239,8 @@ var ModalDialog = GObject.registerClass({
     }
 
     _setState(state) {
-        if (this._state == state) {
+        if (this._state === state)
             return;
-        }
 
         this._state = state;
         this.notify('state');
@@ -280,9 +274,9 @@ var ModalDialog = GObject.registerClass({
     _onKeyFocusOut() {
         let focus = global.stage.key_focus;
 
-        if (focus === null || !this._lightbox.contains(focus)) {
+        if (focus === null || !this._lightbox.contains(focus))
             this.close(true);
-        }
+
     }
 
     _onOpenComplete() {
@@ -290,7 +284,7 @@ var ModalDialog = GObject.registerClass({
         this.emit('opened');
     }
 
-    _onIdleMonitorBecameIdle(monitor) {
+    _onIdleMonitorBecameIdle(unusedMonitor) {
         let pushModalTries = 0;
         let timestamp = global.get_current_time();
 
@@ -299,9 +293,9 @@ var ModalDialog = GObject.registerClass({
             this._pushModalWatchId = 0;
         }
 
-        if (this.pushModal(timestamp)) {
+        if (this.pushModal(timestamp))
             return GLib.SOURCE_REMOVE;
-        }
+
 
         this._pushModalSource = GLib.timeout_add(
             GLib.PRIORITY_DEFAULT,
@@ -323,31 +317,30 @@ var ModalDialog = GObject.registerClass({
                 return GLib.SOURCE_CONTINUE;
             });
         GLib.Source.set_name_by_id(this._pushModalSource,
-                                   '[gnome-pomodoro] this._pushModalSource');
+            '[gnome-pomodoro] this._pushModalSource');
     }
 
     // Gradually open the dialog. Try to make it modal once user had chance to see it.
     open(animate) {
-        if (this.state == State.OPENED || this.state == State.OPENING) {
+        if (this.state === State.OPENED || this.state === State.OPENING)
             return;
-        }
 
         this._pushModalDelaySource = GLib.timeout_add(
             GLib.PRIORITY_DEFAULT,
             Math.max(MIN_DISPLAY_TIME - IDLE_TIME_TO_PUSH_MODAL, 0),
             () => {
-                if (this._pushModalWatchId == 0) {
+                if (this._pushModalWatchId === 0) {
                     this._pushModalWatchId = this._idleMonitor.add_idle_watch(IDLE_TIME_TO_PUSH_MODAL,
-                                                                              this._onIdleMonitorBecameIdle.bind(this));
+                        this._onIdleMonitorBecameIdle.bind(this));
                 }
 
                 this._pushModalDelaySource = 0;
 
                 return GLib.SOURCE_REMOVE;
-            }
+            },
         );
         GLib.Source.set_name_by_id(this._pushModalDelaySource,
-                                   '[gnome-pomodoro] this._pushModalDelaySource');
+            '[gnome-pomodoro] this._pushModalDelaySource');
 
         global.stage.set_child_above_sibling(this, null);
 
@@ -366,8 +359,7 @@ var ModalDialog = GObject.registerClass({
                 mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                 onComplete: this._onOpenComplete.bind(this),
             });
-        }
-        else {
+        } else {
             this._lightbox.lightOn();
             this.opacity = 255;
             this._onOpenComplete();
@@ -382,9 +374,9 @@ var ModalDialog = GObject.registerClass({
     }
 
     close(animate) {
-        if (this.state == State.CLOSED || this.state == State.CLOSING) {
+        if (this.state === State.CLOSED || this.state === State.CLOSING)
             return;
-        }
+
 
         this.popModal();
         this._setState(State.CLOSING);
@@ -435,9 +427,9 @@ var ModalDialog = GObject.registerClass({
             this._keyFocusOutId = 0;
         }
 
-        if (!this._hasModal) {
+        if (!this._hasModal)
             return;
-        }
+
 
         Main.popModal(this, timestamp);
         this._hasModal = false;
@@ -445,22 +437,18 @@ var ModalDialog = GObject.registerClass({
     }
 
     pushModal(timestamp) {
-        if (this._hasModal) {
+        if (this._hasModal)
             return true;
-        }
 
-        if (this.state == State.CLOSED || this.state == State.CLOSING) {
+        if (this.state === State.CLOSED || this.state === State.CLOSING)
             return false;
-        }
 
         let params = { actionMode: Shell.ActionMode.SYSTEM_MODAL };
-        if (timestamp) {
+        if (timestamp)
             params['timestamp'] = timestamp;
-        }
 
-        if (!Main.pushModal(this, params)) {
+        if (!Main.pushModal(this, params))
             return;
-        }
 
         this._disconnectPushModalSignals();
         this._hasModal = true;
@@ -468,9 +456,8 @@ var ModalDialog = GObject.registerClass({
 
         global.stage.set_key_focus(this._lightbox);
 
-        if (!this._keyFocusOutId) {
+        if (!this._keyFocusOutId)
             this._keyFocusOutId = this._lightbox.connect('key-focus-out', this._onKeyFocusOut.bind(this));
-        }
 
         Main.layoutManager.emit('system-modal-opened');
     }
@@ -508,7 +495,7 @@ class PomodoroEndDialog extends ModalDialog {
             x_align: Clutter.ActorAlign.END,
         });
         this._separatorLabel = new St.Label({
-            text: ":",
+            text: ':',
         });
         this._secondsLabel = new St.Label({
             x_expand: true,
@@ -529,7 +516,7 @@ class PomodoroEndDialog extends ModalDialog {
         this._descriptionLabel.clutter_text.line_wrap = true;
 
         let box = new St.BoxLayout({ style_class: 'extension-pomodoro-dialog-box',
-                                     vertical: true });
+            vertical: true });
         box.add_actor(hbox);
         box.add_actor(this._descriptionLabel);
         this._layout.add_actor(box);
@@ -548,8 +535,7 @@ class PomodoroEndDialog extends ModalDialog {
                 this._timerUpdateId = this.timer.connect('update', this._onTimerUpdate.bind(this));
                 this._onTimerUpdate();
             }
-        }
-        else {
+        } else {
             if (this._styleChangedId) {
                 this._secondsLabel.disconnect(this._styleChangedId);
                 this._styleChangedId = 0;
@@ -578,12 +564,12 @@ class PomodoroEndDialog extends ModalDialog {
             let seconds   = Math.floor(remaining % 60);
 
             // method may be called while label actor got destroyed
-            if (this._minutesLabel.clutter_text) {
+            if (this._minutesLabel.clutter_text)
                 this._minutesLabel.clutter_text.set_text('%d'.format(minutes));
-            }
-            if (this._secondsLabel.clutter_text) {
+
+            if (this._secondsLabel.clutter_text)
                 this._secondsLabel.clutter_text.set_text('%02d'.format(seconds));
-            }
+
         }
     }
 
@@ -623,69 +609,65 @@ class PomodoroEndDialog extends ModalDialog {
     _onEvent(actor, event) {
         let x, y, dx, dy, distance;
 
-        if (!event.get_device()) {
+        if (!event.get_device())
             return Clutter.EVENT_STOP;
-        }
 
-        switch (event.type())
-        {
-            case Clutter.EventType.ENTER:
-            case Clutter.EventType.LEAVE:
-            case Clutter.EventType.STAGE_STATE:
-            case Clutter.EventType.DESTROY_NOTIFY:
-            case Clutter.EventType.CLIENT_MESSAGE:
-            case Clutter.EventType.DELETE:
+        switch (event.type()) {
+        case Clutter.EventType.ENTER:
+        case Clutter.EventType.LEAVE:
+        case Clutter.EventType.STAGE_STATE:
+        case Clutter.EventType.DESTROY_NOTIFY:
+        case Clutter.EventType.CLIENT_MESSAGE:
+        case Clutter.EventType.DELETE:
+            return Clutter.EVENT_PROPAGATE;
+
+        case Clutter.EventType.MOTION:
+            [x, y]   = event.get_coords();
+            dx       = this._eventX >= 0 ? x - this._eventX : 0;
+            dy       = this._eventY >= 0 ? y - this._eventY : 0;
+            distance = dx * dx + dy * dy;
+
+            this._eventX = x;
+            this._eventY = y;
+
+            if (distance > MOTION_DISTANCE_TO_CLOSE * MOTION_DISTANCE_TO_CLOSE)
+                this.close(true);
+
+            break;
+
+        case Clutter.EventType.KEY_PRESS:
+            switch (event.get_key_symbol()) {
+            case Clutter.KEY_AudioCycleTrack:
+            case Clutter.KEY_AudioForward:
+            case Clutter.KEY_AudioLowerVolume:
+            case Clutter.KEY_AudioNext:
+            case Clutter.KEY_AudioPause:
+            case Clutter.KEY_AudioPlay:
+            case Clutter.KEY_AudioPrev:
+            case Clutter.KEY_AudioRaiseVolume:
+            case Clutter.KEY_AudioRandomPlay:
+            case Clutter.KEY_AudioRecord:
+            case Clutter.KEY_AudioRepeat:
+            case Clutter.KEY_AudioRewind:
+            case Clutter.KEY_AudioStop:
+            case Clutter.KEY_AudioMicMute:
+            case Clutter.KEY_AudioMute:
+            case Clutter.KEY_MonBrightnessDown:
+            case Clutter.KEY_MonBrightnessUp:
+            case Clutter.KEY_Display:
                 return Clutter.EVENT_PROPAGATE;
 
-            case Clutter.EventType.MOTION:
-                [x, y]   = event.get_coords();
-                dx       = this._eventX >= 0 ? x - this._eventX : 0;
-                dy       = this._eventY >= 0 ? y - this._eventY : 0;
-                distance = dx * dx + dy * dy;
-
-                this._eventX = x;
-                this._eventY = y;
-
-                if (distance > MOTION_DISTANCE_TO_CLOSE * MOTION_DISTANCE_TO_CLOSE) {
-                    this.close(true);
-                }
-
-                break;
-
-            case Clutter.EventType.KEY_PRESS:
-                switch (event.get_key_symbol())
-                {
-                    case Clutter.KEY_AudioCycleTrack:
-                    case Clutter.KEY_AudioForward:
-                    case Clutter.KEY_AudioLowerVolume:
-                    case Clutter.KEY_AudioNext:
-                    case Clutter.KEY_AudioPause:
-                    case Clutter.KEY_AudioPlay:
-                    case Clutter.KEY_AudioPrev:
-                    case Clutter.KEY_AudioRaiseVolume:
-                    case Clutter.KEY_AudioRandomPlay:
-                    case Clutter.KEY_AudioRecord:
-                    case Clutter.KEY_AudioRepeat:
-                    case Clutter.KEY_AudioRewind:
-                    case Clutter.KEY_AudioStop:
-                    case Clutter.KEY_AudioMicMute:
-                    case Clutter.KEY_AudioMute:
-                    case Clutter.KEY_MonBrightnessDown:
-                    case Clutter.KEY_MonBrightnessUp:
-                    case Clutter.KEY_Display:
-                        return Clutter.EVENT_PROPAGATE;
-
-                    default:
-                        this.close(true);
-                        break;
-                }
-
-                break;
-
-            case Clutter.EventType.BUTTON_PRESS:
-            case Clutter.EventType.TOUCH_BEGIN:
+            default:
                 this.close(true);
                 break;
+            }
+
+            break;
+
+        case Clutter.EventType.BUTTON_PRESS:
+        case Clutter.EventType.TOUCH_BEGIN:
+            this.close(true);
+            break;
         }
 
         return Clutter.EVENT_STOP;
@@ -696,7 +678,7 @@ class PomodoroEndDialog extends ModalDialog {
     }
 
     _onDestroy() {
-        this._disconnectSignals()
+        this._disconnectSignals();
 
         if (this._closingId) {
             this.disconnect(this._closingId);
@@ -712,11 +694,10 @@ class PomodoroEndDialog extends ModalDialog {
     }
 
     _closeWhenActive() {
-        if (this.state == State.CLOSED || this.state == State.CLOSING) {
+        if (this.state === State.CLOSED || this.state === State.CLOSING)
             return;
-        }
 
-        if (this._eventId == 0) {
+        if (this._eventId === 0) {
             this._eventX = -1;
             this._eventY = -1;
             this._eventId = this._lightbox.connect('event', this._onEvent.bind(this));
@@ -728,17 +709,16 @@ class PomodoroEndDialog extends ModalDialog {
     open(animate) {
         super.open(animate);
 
-        if (this._closeWhenActiveDelaySource == 0) {
+        if (this._closeWhenActiveDelaySource === 0) {
             this._closeWhenActiveDelaySource = GLib.timeout_add(
                 GLib.PRIORITY_DEFAULT,
                 MIN_DISPLAY_TIME,
                 () => {
                     if (this._idleMonitor.get_idletime() < IDLE_TIME_TO_CLOSE) {
                         this._closeWhenActiveIdleWatchId = this._idleMonitor.add_idle_watch(IDLE_TIME_TO_CLOSE,
-                            (monitor) => this._closeWhenActive()
+                            unusedMonitor => this._closeWhenActive(),
                         );
-                    }
-                    else {
+                    } else {
                         this._closeWhenActive();
                     }
 
@@ -746,32 +726,28 @@ class PomodoroEndDialog extends ModalDialog {
                     return GLib.SOURCE_REMOVE;
                 });
             GLib.Source.set_name_by_id(this._closeWhenActiveDelaySource,
-                                       '[gnome-pomodoro] this._closeWhenActiveDelaySource');
+                '[gnome-pomodoro] this._closeWhenActiveDelaySource');
         }
     }
 
     // Schedule dialog to open when idle
     openWhenIdle() {
-        if (this.state == State.OPEN || this.state == State.OPENING) {
+        if (this.state === State.OPEN || this.state === State.OPENING)
             return;
-        }
 
-        if (this._openWhenIdleWatchId == 0) {
+        if (this._openWhenIdleWatchId === 0) {
             this._openWhenIdleWatchId = this._idleMonitor.add_idle_watch(IDLE_TIME_TO_OPEN,
-                (monitor) => {
+                unusedMonitor => {
                     let info = Utils.getFocusedWindowInfo();
 
-                    if (info.isPlayer && info.isFullscreen)
-                    {
+                    if (info.isPlayer && info.isFullscreen) {
                         // dont reopen if playing a video
                         return;
                     }
 
                     if (!this.timer.isBreak() ||
                         this.timer.getRemaining() < OPEN_WHEN_IDLE_MIN_REMAINING_TIME)
-                    {
                         return;
-                    }
 
                     this.open(true);
                 });
@@ -781,8 +757,7 @@ class PomodoroEndDialog extends ModalDialog {
     setDescription(text) {
         this.description = text;
 
-        if (this._descriptionLabel.clutter_text) {
+        if (this._descriptionLabel.clutter_text)
             this._descriptionLabel.clutter_text.set_text(this.description);
-        }
     }
 });

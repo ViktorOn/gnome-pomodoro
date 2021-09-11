@@ -1,0 +1,20 @@
+rules:
+  camelcase:
+    - error
+    - properties: never
+      allow: [^vfunc_, ^on_]
+  object-curly-spacing:
+    - error
+    - always
+  prefer-arrow-callback: error
+  prefer-rest-params: warn
+  no-warning-comments: warn
+globals:
+  debug: readonly
+  info: readonly
+  warning: readonly
+  critical: readonly
+  error: readonly
+  pkg: readonly
+  global: readonly
+
