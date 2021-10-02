@@ -37,7 +37,7 @@ namespace GnomePlugin
         private Pomodoro.CapabilityGroup        capabilities;
         private GnomePlugin.GnomeShellExtension shell_extension;
         private GnomePlugin.IdleMonitor         idle_monitor;
-        private uint                            become_active_id = 0;
+        private uint32                          become_active_id = 0;
         private bool                            can_enable = false;
         private double                          last_activity_time = 0.0;
 
@@ -65,6 +65,7 @@ namespace GnomePlugin
                 this.capabilities = new Pomodoro.CapabilityGroup ("gnome");
 
                 try {
+                    // TODO: idle-monitor should be initialized as async
                     this.idle_monitor = new GnomePlugin.IdleMonitor ();
 
                     this.timer = Pomodoro.Timer.get_default ();
@@ -81,9 +82,9 @@ namespace GnomePlugin
 
             /* GNOME Shell extension */
             if (this.can_enable && this.shell_extension == null) {
-                this.shell_extension = new GnomePlugin.GnomeShellExtension (Config.EXTENSION_UUID,
-                                                                            Config.EXTENSION_DIR);
+                this.shell_extension = new GnomePlugin.GnomeShellExtension (Config.EXTENSION_UUID);
 
+                yield this.shell_extension.init_async (GLib.Priority.DEFAULT, cancellable);
                 yield this.shell_extension.enable (cancellable);
             }
 
@@ -125,7 +126,7 @@ namespace GnomePlugin
          * We want to detect user/human activity so it sparse events.
          */
         private void on_become_active (GnomePlugin.IdleMonitor monitor,
-                                       uint                    id)
+                                       uint32                  id)
         {
             var timestamp = Pomodoro.get_current_time ();
 

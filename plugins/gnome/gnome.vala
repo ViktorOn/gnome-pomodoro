@@ -57,24 +57,56 @@ namespace Gnome
         public string         path;
         public string         version;
         public ExtensionState state;
+
+        public ExtensionInfo.with_defaults (string uuid)
+        {
+            this.uuid = uuid;
+            this.path = "";
+            this.version = "";
+            this.state = ExtensionState.UNKNOWN;
+        }
+
+        public ExtensionInfo.deserialize (string                              uuid,
+                                          GLib.HashTable<string,GLib.Variant> data) throws GLib.Error
+        {
+            this.uuid = data.contains ("uuid")
+                            ? data.lookup ("uuid").get_string ()
+                            : uuid;
+            this.path = data.contains ("path")
+                            ? data.lookup ("path").get_string ()
+                            : "";
+            this.version = data.contains ("version")
+                            ? data.lookup ("version").get_string ()
+                            : "";
+            this.state = data.contains ("state")
+                            ? (Gnome.ExtensionState) data.lookup ("state").get_double ()
+                            : Gnome.ExtensionState.UNINSTALLED;
+        }
     }
 
     [DBus (name = "org.gnome.Shell")]
     public interface Shell : GLib.Object
     {
-        public abstract bool eval (string script)
-                                   throws Error;
+        public abstract string mode { owned get; }
+        public abstract string shell_version { owned get; }
+
+        // public abstract void eval
+        //                                (string     script,
+        //                                 out bool   success,
+        //                                 out string result)
+        //                                 throws IOError;
 
         public abstract bool grab_accelerator
-                                       (string accelerator,
-                                        uint32 flags,
-                                        out uint action)
-                                        throws Error;
+                                       (string     accelerator,
+                                        uint32     mode_flags,
+                                        uint32     grab_flags,
+                                        out uint32 action)
+                                        throws GLib.DBusError, GLib.IOError;
 
         public abstract bool ungrab_accelerator
-                                       (uint32 action,
+                                       (uint32   action,
                                         out bool success)
-                                        throws Error;
+                                        throws GLib.DBusError, GLib.IOError;
 
         public signal void accelerator_activated
                                        (uint32 action,
@@ -85,32 +117,49 @@ namespace Gnome
     [DBus (name = "org.gnome.Shell.Extensions")]
     public interface ShellExtensions : GLib.Object
     {
-        public abstract void get_extension_info
-                                       (string uuid,
-                                        out HashTable<string,Variant> info)
-                                        throws Error;
+        public abstract bool user_extensions_enabled { owned get; }
+        public abstract string shell_version { owned get; }
 
-        public abstract void get_extension_errors
-                                       (string uuid,
-                                        out string[] errors)
-                                        throws Error;
+        // public abstract void check_for_updates () throws GLib.DBusError, GLib.IOError;
+
+        public abstract bool enable_extension
+                                       (string uuid)
+                                        throws GLib.DBusError, GLib.IOError;
+
+        public abstract bool disable_extension
+                                       (string uuid)
+                                        throws GLib.DBusError, GLib.IOError;
 
         public abstract void reload_extension
                                        (string uuid)
-                                        throws Error;
-
-        public abstract async string install_remote_extension
-                                       (string uuid)
-                                        throws Error;
+                                        throws GLib.DBusError, GLib.IOError;
 
         public abstract bool uninstall_extension
                                        (string uuid)
-                                        throws Error;
+                                        throws GLib.DBusError, GLib.IOError;
 
-        public signal void extension_status_changed
+        public abstract async HashTable<string,Variant> get_extension_info
+                                       (string       uuid,
+                                        Cancellable? cancellable = null)
+                                        throws GLib.DBusError, GLib.IOError;
+
+        public abstract void get_extension_errors
+                                       (string       uuid,
+                                        out string[] errors)
+                                        throws GLib.DBusError, GLib.IOError;
+
+        // public abstract async string install_remote_extension
+        //                                (string uuid)
+        //                                 throws GLib.DBusError, GLib.IOError;
+
+        public signal void extension_state_changed
                                        (string uuid,
-                                        int state,
-                                        string error);
+                                        HashTable<string,Variant> info);
+
+        // public signal void extension_status_changed
+        //                                (string uuid,
+        //                                 int32 state,
+        //                                 string IOError);
     }
 }
 
@@ -121,22 +170,24 @@ namespace Meta
     [DBus (name = "org.gnome.Mutter.IdleMonitor")]
     public interface IdleMonitor : GLib.Object
     {
+        public abstract void add_idle_watch
+                                       (uint64     interval,
+                                        out uint32 id)
+                                        throws GLib.DBusError, GLib.IOError;
+
+        public abstract void add_user_active_watch
+                                       (out uint32 id)
+                                        throws GLib.DBusError, GLib.IOError;
+
         public abstract void get_idletime
                                        (out uint64 idletime)
-                                        throws Error;
+                                        throws GLib.DBusError, GLib.IOError;
 
-        public abstract void add_idle_watch
-                                       (uint64   interval,
-                                        out uint id)
-                                        throws Error;
-
-        public abstract void add_user_active_watch (out uint id)
-                                        throws Error;
 
         public abstract void remove_watch
-                                       (uint id)
-                                        throws Error;
+                                       (uint32 id)
+                                        throws GLib.DBusError, GLib.IOError;
 
-        public signal void watch_fired (uint id);
+        public signal void watch_fired (uint32 id);
     }
 }
