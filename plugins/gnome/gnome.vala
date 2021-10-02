@@ -90,12 +90,6 @@ namespace Gnome
         public abstract string mode { owned get; }
         public abstract string shell_version { owned get; }
 
-        // public abstract void eval
-        //                                (string     script,
-        //                                 out bool   success,
-        //                                 out string result)
-        //                                 throws IOError;
-
         public abstract bool grab_accelerator
                                        (string     accelerator,
                                         uint32     mode_flags,
@@ -119,8 +113,6 @@ namespace Gnome
     {
         public abstract bool user_extensions_enabled { owned get; }
         public abstract string shell_version { owned get; }
-
-        // public abstract void check_for_updates () throws GLib.DBusError, GLib.IOError;
 
         public abstract bool enable_extension
                                        (string uuid)
@@ -148,18 +140,9 @@ namespace Gnome
                                         out string[] errors)
                                         throws GLib.DBusError, GLib.IOError;
 
-        // public abstract async string install_remote_extension
-        //                                (string uuid)
-        //                                 throws GLib.DBusError, GLib.IOError;
-
         public signal void extension_state_changed
                                        (string uuid,
                                         HashTable<string,Variant> info);
-
-        // public signal void extension_status_changed
-        //                                (string uuid,
-        //                                 int32 state,
-        //                                 string IOError);
     }
 }
 
