@@ -2,8 +2,8 @@ namespace Gnome
 {
     public enum ExtensionState
     {
-        /* Custom value suggesting there was DBus error */
-        UNKNOWN = 0,
+        // /* Custom state, before we fetch the state via d-bus */
+        // UNKNOWN = 0,
 
         ENABLED = 1,
         DISABLED = 2,
@@ -21,8 +21,8 @@ namespace Gnome
         {
             switch (this)
             {
-                case UNKNOWN:
-                    return "unknown";
+                // case UNKNOWN:
+                //     return "unknown";
 
                 case ENABLED:
                     return "enabled";
@@ -90,6 +90,13 @@ namespace Gnome
         public abstract string mode { owned get; }
         public abstract string shell_version { owned get; }
 
+        public abstract async bool eval
+                                       (string     script,
+                                        // out bool   success,
+                                        // out string result,
+                                        Cancellable? cancellable = null)
+                                        throws GLib.DBusError, GLib.IOError;
+
         public abstract bool grab_accelerator
                                        (string     accelerator,
                                         uint32     mode_flags,
@@ -114,20 +121,19 @@ namespace Gnome
         public abstract bool user_extensions_enabled { owned get; }
         public abstract string shell_version { owned get; }
 
-        public abstract bool enable_extension
-                                       (string uuid)
+        public abstract async bool enable_extension
+                                       (string uuid,
+                                        Cancellable? cancellable = null)
                                         throws GLib.DBusError, GLib.IOError;
 
-        public abstract bool disable_extension
-                                       (string uuid)
+        public abstract async bool disable_extension
+                                       (string uuid,
+                                        Cancellable? cancellable = null)
                                         throws GLib.DBusError, GLib.IOError;
 
-        public abstract void reload_extension
-                                       (string uuid)
-                                        throws GLib.DBusError, GLib.IOError;
-
-        public abstract bool uninstall_extension
-                                       (string uuid)
+        public abstract async bool uninstall_extension
+                                       (string uuid,
+                                        Cancellable? cancellable = null)
                                         throws GLib.DBusError, GLib.IOError;
 
         public abstract async HashTable<string,Variant> get_extension_info
