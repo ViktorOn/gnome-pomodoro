@@ -2,9 +2,6 @@ namespace Gnome
 {
     public enum ExtensionState
     {
-        // /* Custom state, before we fetch the state via d-bus */
-        // UNKNOWN = 0,
-
         ENABLED = 1,
         DISABLED = 2,
         ERROR = 3,
@@ -21,9 +18,6 @@ namespace Gnome
         {
             switch (this)
             {
-                // case UNKNOWN:
-                //     return "unknown";
-
                 case ENABLED:
                     return "enabled";
 
@@ -63,7 +57,7 @@ namespace Gnome
             this.uuid = uuid;
             this.path = "";
             this.version = "";
-            this.state = ExtensionState.UNKNOWN;
+            this.state = ExtensionState.UNINSTALLED;
         }
 
         public ExtensionInfo.deserialize (string                              uuid,
