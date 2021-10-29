@@ -84,8 +84,8 @@ namespace Pomodoro
 
         private Pomodoro.Animation blink_animation;
         private string default_page;
-        private Gtk.Callback? install_extension_callback = null;
-        private Gtk.Callback? install_extension_dismissed_callback = null;
+        private GLib.Callback? install_extension_callback = null;
+        private GLib.Callback? install_extension_dismissed_callback = null;
 
         construct
         {
@@ -251,24 +251,27 @@ namespace Pomodoro
             return false;
         }
 
-        [GtkCallback]
-        private bool on_button_press (Gtk.Widget      widget,
-                                      Gdk.EventButton event)
-        {
-            if (event.button == 1) {
-                this.begin_move_drag ((int) event.button, (int) event.x_root, (int) event.y_root, event.time);
-
-                return true;
-            }
-
-            return false;
-        }
+        // TODO: port to gtk4
+        // [GtkCallback]
+        // private bool on_button_press (Gtk.Widget      widget,
+        //                               Gdk.EventButton event)
+        // {
+        //     if (event.button == 1) {
+        //         this.begin_move_drag ((int) event.button, (int) event.x_root, (int) event.y_root, event.time);
+        //
+        //         return true;
+        //     }
+        //
+        //     return false;
+        // }
 
         [GtkCallback]
         private void on_in_app_notification_install_extension_install_button_clicked (Gtk.Button button)
         {
+            this.in_app_notification_install_extension.set_reveal_child (false);
+
             if (install_extension_callback != null) {
-                this.install_extension_callback (this.in_app_notification_install_extension);
+                this.install_extension_callback ();
             }
         }
 
@@ -278,12 +281,12 @@ namespace Pomodoro
             this.in_app_notification_install_extension.set_reveal_child (false);
 
             if (install_extension_dismissed_callback != null) {
-                this.install_extension_dismissed_callback (this.in_app_notification_install_extension);
+                this.install_extension_dismissed_callback ();
             }
         }
 
-        public void show_in_app_notification_install_extension (Gtk.Callback? callback,
-                                                                Gtk.Callback? dismissed_callback = null)
+        public void show_in_app_notification_install_extension (GLib.Callback? callback,
+                                                                GLib.Callback? dismissed_callback = null)
         {
             this.install_extension_callback = callback;
             this.install_extension_dismissed_callback = dismissed_callback;
@@ -313,7 +316,7 @@ namespace Pomodoro
         [GtkChild]
         private unowned Gtk.Stack stack;
         [GtkChild]
-        private unowned Gtk.ButtonBox action_area;
+        private unowned Gtk.Box action_area;
         [GtkChild]
         private unowned Gtk.TextView error_installing_textview;
         [GtkChild]
@@ -349,7 +352,7 @@ namespace Pomodoro
                 }
             });
 
-            this.spinner.active = false;
+            this.spinner.spinning = false;
             this.stack.set_visible_child_name ("success");
         }
 
@@ -366,7 +369,7 @@ namespace Pomodoro
 
             this.error_installing_textview.buffer.text = error_message;
 
-            this.spinner.active = false;
+            this.spinner.spinning = false;
             this.stack.set_visible_child_name ("error-installing");
         }
 
@@ -383,7 +386,7 @@ namespace Pomodoro
 
             this.error_installing_textview.buffer.text = error_message;
 
-            this.spinner.active = false;
+            this.spinner.spinning = false;
             this.stack.set_visible_child_name ("error-enabling");
         }
     }
