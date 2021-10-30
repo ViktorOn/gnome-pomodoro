@@ -311,6 +311,8 @@ namespace Pomodoro
     [GtkTemplate (ui = "/org/gnomepomodoro/Pomodoro/install-extension-dialog.ui")]
     public class InstallExtensionDialog : Gtk.MessageDialog, Gtk.Buildable
     {
+        private delegate void ForeachChildFunc (Gtk.Widget child);
+
         [GtkChild]
         private unowned Gtk.Spinner spinner;
         [GtkChild]
@@ -321,15 +323,34 @@ namespace Pomodoro
         private unowned Gtk.TextView error_installing_textview;
         [GtkChild]
         private unowned Gtk.TextView error_enabling_textview;
+        [GtkChild]
+        private unowned Gtk.Button cancel_button;
+        [GtkChild]
+        private unowned Gtk.Button manage_extensions_button;
+        [GtkChild]
+        private unowned Gtk.Button report_button;
+        [GtkChild]
+        private unowned Gtk.Button close_button;
+        [GtkChild]
+        private unowned Gtk.Button done_button;
 
         construct
         {
             this.show_in_progress_page ();
         }
 
+        private void foreach_button (ForeachChildFunc func)
+        {
+            func ((Gtk.Widget) this.cancel_button);
+            func ((Gtk.Widget) this.manage_extensions_button);
+            func ((Gtk.Widget) this.report_button);
+            func ((Gtk.Widget) this.close_button);
+            func ((Gtk.Widget) this.done_button);
+        }
+
         public void show_in_progress_page ()
         {
-            this.action_area.@foreach ((button) => {
+            this.foreach_button ((button) => {
                 if (button.name == "cancel") {
                     button.show ();
                 }
@@ -343,7 +364,7 @@ namespace Pomodoro
 
         public void show_success_page ()
         {
-            this.action_area.@foreach ((button) => {
+            this.foreach_button ((button) => {
                 if (button.name == "manage-extensions" || button.name == "done") {
                     button.show ();
                 }
@@ -358,7 +379,7 @@ namespace Pomodoro
 
         public void show_error_page (string error_message)
         {
-            this.action_area.@foreach ((button) => {
+            this.foreach_button ((button) => {
                 if (button.name == "report-issue" || button.name == "close") {
                     button.show ();
                 }
@@ -375,7 +396,7 @@ namespace Pomodoro
 
         public void show_enabling_error_page (string error_message)
         {
-            this.action_area.@foreach ((button) => {
+            this.foreach_button ((button) => {
                 if (button.name == "report-issue" || button.name == "close") {
                     button.show ();
                 }
