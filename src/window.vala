@@ -202,6 +202,7 @@ namespace Pomodoro
             }
         }
 
+        /*
         [GtkCallback]
         private bool on_timer_box_draw (Gtk.Widget    widget,
                                         Cairo.Context context)
@@ -242,6 +243,7 @@ namespace Pomodoro
 
             return false;
         }
+        */
 
         [GtkCallback]
         private void on_in_app_notification_install_extension_install_button_clicked (Gtk.Button button)
