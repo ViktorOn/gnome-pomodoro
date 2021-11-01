@@ -128,7 +128,7 @@ incs = include_directories('.')
 
 subdir('data')
 subdir('src')
-subdir('plugins')
+# subdir('plugins')
 subdir('po')
 subdir('tests')
 
