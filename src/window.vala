@@ -22,8 +22,9 @@
 namespace Pomodoro
 {
     [GtkTemplate (ui = "/org/gnomepomodoro/Pomodoro/window.ui")]
-    public class Window : Gtk.ApplicationWindow, Gtk.Buildable
+    public class Window : Gtk.ApplicationWindow
     {
+        /*
         private const int MIN_WIDTH = 500;
         private const int MIN_HEIGHT = 650;
 
@@ -45,6 +46,7 @@ namespace Pomodoro
             { "short-break", N_("Short Break") },
             { "long-break", N_("Long Break") }
         };
+        */
 
         public string mode {
             get {
@@ -62,9 +64,15 @@ namespace Pomodoro
         }
 
         private unowned Pomodoro.Timer timer;
+        // private Pomodoro.Animation blink_animation;
+        private string default_page;
+        // private GLib.Callback? install_extension_callback = null;
+        // private GLib.Callback? install_extension_dismissed_callback = null;
 
         [GtkChild]
         private unowned Gtk.Stack stack;
+
+        /*
         [GtkChild]
         private unowned Gtk.Stack timer_stack;
         [GtkChild]
@@ -81,23 +89,16 @@ namespace Pomodoro
         private unowned Gtk.Image pause_button_image;
         [GtkChild]
         private unowned Gtk.Revealer in_app_notification_install_extension;
-
-        private Pomodoro.Animation blink_animation;
-        private string default_page;
-        private GLib.Callback? install_extension_callback = null;
-        private GLib.Callback? install_extension_dismissed_callback = null;
+        */
 
         construct
         {
             // this.stack.add_titled (this.timer_stack, "timer", _("Timer"));
-            this.stack.add_titled (new Pomodoro.StatsView (), "stats", _("Stats"));
+            // this.stack.add_titled (new Pomodoro.StatsView (), "stats", _("Stats"));
 
             // TODO: this.default_page should be set from application.vala
             var application = Pomodoro.Application.get_default ();
 
-            // if (application.capabilities.has_enabled ("task-list")) {  // TODO
-            //     this.default_page = "task-list";
-            // }
             if (application.capabilities.has_capability ("indicator")) {
                 this.default_page = "stats";
             }
@@ -105,13 +106,16 @@ namespace Pomodoro
                 this.default_page = "timer";
             }
 
+            /*
             this.stack.visible_child_name = this.default_page;
 
             this.on_timer_state_notify ();
             this.on_timer_elapsed_notify ();
             this.on_timer_is_paused_notify ();
+            */
         }
 
+        /*
         public void parser_finished (Gtk.Builder builder)
         {
             this.timer = Pomodoro.Timer.get_default ();
@@ -129,7 +133,9 @@ namespace Pomodoro
             this.timer.notify["elapsed"].connect_after (this.on_timer_elapsed_notify);
             this.timer.notify["is-paused"].connect_after (this.on_timer_is_paused_notify);
         }
+        */
 
+        /*
         private void on_blink_animation_complete ()
         {
             if (this.timer.is_paused) {
@@ -201,6 +207,7 @@ namespace Pomodoro
                 this.blink_animation.start ();
             }
         }
+        */
 
         /*
         [GtkCallback]
@@ -245,6 +252,7 @@ namespace Pomodoro
         }
         */
 
+        /*
         [GtkCallback]
         private void on_in_app_notification_install_extension_install_button_clicked (Gtk.Button button)
         {
@@ -278,8 +286,10 @@ namespace Pomodoro
         {
             this.in_app_notification_install_extension.set_reveal_child (false);
         }
+        */
     }
 
+    /*
     public enum InstallExtensionDialogResponse
     {
         CANCEL = 0,
@@ -389,4 +399,5 @@ namespace Pomodoro
             this.stack.set_visible_child_name ("error-enabling");
         }
     }
+    */
 }
