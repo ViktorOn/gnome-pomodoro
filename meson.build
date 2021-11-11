@@ -20,6 +20,7 @@ gsound_dep = dependency('gsound', version: '>=0.98')
 gstreamer_dep = dependency('gstreamer-1.0', version: '>=1.0.10')
 sqlite_dep = dependency('sqlite3')
 json_dep = dependency('json-glib-1.0', version: '>=1.6.2')
+pangocairo_dep = dependency('pangocairo')
 
 cc = meson.get_compiler('c')
 libm_dep = cc.find_library('m')
